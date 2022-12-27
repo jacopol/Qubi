@@ -1,0 +1,1 @@
+g++ simple.cpp -I/home/jaco/Repos/sylvan/src/ -L/home/jaco/Repos/sylvan/build/ -lsylvan -lpthread
