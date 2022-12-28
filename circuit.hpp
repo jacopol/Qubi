@@ -47,33 +47,4 @@ class Circuit {
         void printInfo(ostream& s);
 };
 
-// Exceptions:
-
-struct PrefixOutOfBound : public exception {
-    private:
-        int index;
-        int size;
-    public:
-        PrefixOutOfBound(int i, int s);
-        string what();
-};
-
-struct MatrixOutOfBound : public exception {
-    private:
-        int index;
-        int size;
-    public:
-        MatrixOutOfBound(int i, int s);
-        string what();
-};
-
-struct InputUndefined : public exception { 
-    private:
-        int index;
-        int size;
-    public:
-        InputUndefined(int i, int s);
-        string what();
-};
-
 #endif

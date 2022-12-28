@@ -1,5 +1,6 @@
 #include <vector>
 #include <iostream>
+#include <assert.h>
 #include "circuit.hpp"
 
 const vector<string> Q = {"Forall", "Exists"};
@@ -22,7 +23,7 @@ void Gate::addInput(int i) {
 
 void Gate::checkLess(int max) {
     for (int i : inputs) {
-        if (abs(i)<=0 || abs(i)>=max) throw InputUndefined(i,max);
+        assert(0 < abs(i) && abs(i) < max);
     }
 }
 
@@ -47,7 +48,7 @@ void Circuit::addGate(Gate g) {
 }
 void Circuit::setOutput(int i) {
     int max = prefix.size() + matrix.size();
-    if (abs(i)<=0 || abs(i)>=max) throw InputUndefined(i,max);
+    assert(0 < abs(i) && abs(i) < max);
     output = i;
 }
 int Circuit::getOutput() {
@@ -55,26 +56,17 @@ int Circuit::getOutput() {
 }
 
 Quantifier Circuit::getQuant(int i) {
-    if (0<i && i<prefix.size()) { 
-        return prefix[i];
-    }
-    else {
-        throw PrefixOutOfBound(i,prefix.size());
-    }
+    assert(0 < i && i < prefix.size());
+    return prefix[i];
 }
 string Circuit::Quant(int i) {
     return Q[getQuant(i)];
 }
 
 Gate Circuit::getGate(int i) {
-    if (prefix.size()<=i && i<matrix.size() + prefix.size()) { 
-        return matrix[i-prefix.size()];
-    }
-    else {
-        throw MatrixOutOfBound(i,matrix.size() + prefix.size());
-    }
+    assert(prefix.size() <= i && i < matrix.size() + prefix.size());
+    return matrix[i-prefix.size()];
 }
-
 vector<vector<int>> Circuit::getBlocks() {
     vector<vector<int>> allBlocks;
     vector<int> curBlock;
@@ -83,7 +75,7 @@ vector<vector<int>> Circuit::getBlocks() {
         if (getQuant(i) == q) {
             curBlock.push_back(i);
         }
-        else {
+        else { // start a new block
             q = getQuant(i);
             allBlocks.push_back(curBlock);
             curBlock = vector<int>();
@@ -93,34 +85,11 @@ vector<vector<int>> Circuit::getBlocks() {
     allBlocks.push_back(curBlock);
     return allBlocks;
 }
+
 void Circuit::printInfo(ostream &s) {
     s   << "Quantified Circuit \"" << name << "\", with " 
         << prefix.size()-1 << " variables, " 
         << matrix.size() << " gates, " 
         << getBlocks().size() << " quantifier blocks."
         << endl;
-}
-
-MatrixOutOfBound::MatrixOutOfBound(int i, int s) {
-    index = i;
-    size = s;
-}
-string MatrixOutOfBound::what() {
-    return "Gate " + to_string(index) + " is not defined [1.." + to_string(size-1) + "]";
-}
-
-PrefixOutOfBound::PrefixOutOfBound(int i, int s) {
-    index = i;
-    size = s;
-}
-string PrefixOutOfBound::what() {
-    return "Variable " + to_string(index) + " is not in Prenex [1.." + to_string(size-1) + "]";
-}
-
-InputUndefined::InputUndefined(int i, int s) {
-    index = i;
-    size = s;
-}
-string InputUndefined::what() {
-    return "Input " + to_string(index) + " to Gate " + to_string(size) + " is not yet defined";
 }

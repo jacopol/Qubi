@@ -1,6 +1,6 @@
 *.pdf
 *.dot
 *.C
-test
+qubi
 .vscode/
 Benchmarks/
