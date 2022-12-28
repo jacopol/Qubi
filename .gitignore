@@ -2,4 +2,5 @@
 *.dot
 *.C
 test
-.vscode/*
+.vscode/
+Benchmarks/

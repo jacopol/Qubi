@@ -53,7 +53,7 @@ void BddSolver::result(Circuit &c) {
         }
         // Sylvan vector starts at 0
         vector<bool> val = matrix.PickOneCube(vars);
-        for (int i=1; i<c.maxVar();i++) {
+        for (int i=1; i<=firstBlock;i++) {
             if (val[i-1]==false)
                 cout << -i << " ";
             else if (val[i-1]==true)

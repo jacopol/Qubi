@@ -79,19 +79,22 @@ void testall(BddSolver &solver) {
     testQbf(solver, test_qbf2());
 }
 
-int main() {
+void test4() {
+    BddSolver solver1(1,1L<<26);
+    testall(solver1);
+}
+
+void test5() {
+    BlockSolver solver1(1,1L<<26);
+    testall(solver1);
+}
+
+int test() {
     //test1();
     //test2();
     //test3();
-
-    {
-        BddSolver solver1(1,1L<<26);
-        testall(solver1);
-    }
-    {
-        BlockSolver solver2(1,1L<<26);
-        testall(solver2);
-    }
+    test4();
+    test5();
 
     return 0;
 }
