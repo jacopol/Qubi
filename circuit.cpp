@@ -29,14 +29,13 @@ void Gate::checkLess(int max) {
     }
 }
 
-void Circuit::addVar(Quantifier q) {
-    prefix.push_back(q);
-}
-
 Circuit::Circuit(string s) {
     // index 0 will never be used to avoid confusion 0/-0
     prefix.push_back(Forall);
     name=s;
+}
+void Circuit::addVar(Quantifier q) {
+    prefix.push_back(q);
 }
 int Circuit::maxVar() {
     return prefix.size();

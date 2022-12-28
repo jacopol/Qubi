@@ -15,6 +15,8 @@ BddSolver::BddSolver(int workers, long long maxnodes) {
     std::cerr << "Opening Sylvan BDDs" << std::endl;
 }
 
+BlockSolver::BlockSolver(int workers, long long maxnodes) : BddSolver(workers,maxnodes) {}
+
 BddSolver::~BddSolver() {
     sylvan_stats_report(stdout); // if SYLVAN_STATS is set
     sylvan_quit();
@@ -28,16 +30,44 @@ void BddSolver::solveVars(Circuit &c) {
     result(c);
 }
 
-void BddSolver::solveBlocks(Circuit &c) {
-    matrix2bdd(c);
-    blocks2bdd(c);
-    result(c);
+void BddSolver::result(Circuit &c) {
+    // Here we assume that all variables except for 
+    // the first (outermost) block have been eliminated
+    cout << "Result: ";
+    if (matrix == sylvan_true)
+        cout << "TRUE" << endl;
+    else if (matrix == sylvan_false) 
+        cout << "FALSE" << endl;
+    else {
+        Quantifier q = c.getQuant(1);
+        if (q==Forall)
+            cout << "FALSE. Counterexample: ";
+        else
+            cout << "TRUE. Example: ";
+
+        BddSet vars = BddSet();
+        int firstBlock = c.getBlocks()[0].size();
+        // QBF variables start at 1
+        for (int i=1; i<=firstBlock; i++) {
+            vars.add(i);
+        }
+        // Sylvan vector starts at 0
+        vector<bool> val = matrix.PickOneCube(vars);
+        for (int i=1; i<c.maxVar();i++) {
+            if (val[i-1]==false)
+                cout << -i << " ";
+            else if (val[i-1]==true)
+                cout << i << " ";
+        }
+        cout << endl;
+    }
+    cout << endl;
 }
 
 void BddSolver::matrix2bdd(Circuit &c) {
-    vector<Bdd> bdds;                   // lookup table previous BDDs
-    bdds.push_back(sylvan_true);        // unused entry 0
-    auto toBdd = [&bdds](int i)->Bdd {  // negate (if necessary) and look up Bdd
+    vector<Bdd> bdds;                    // lookup table previous BDDs
+    bdds.push_back(sylvan_true);         // unused entry 0
+    auto toBdd = [&bdds](int i)-> Bdd {  // negate (if necessary) and look up Bdd
         if (i>0)
             return bdds[i];
         else
@@ -94,7 +124,8 @@ void BddSolver::prefix2bdd(Circuit &c) {
     }
 }
 
-void BddSolver::blocks2bdd(Circuit &c) {
+// override
+void BlockSolver::prefix2bdd(Circuit &c) {
     cerr << "Quantifying Prefix Inside-Out, per block" << endl;
     vector<vector<int>> blocks = c.getBlocks();
 
@@ -117,36 +148,4 @@ void BddSolver::blocks2bdd(Circuit &c) {
             matrix = matrix.ExistAbstract(cube);
         cerr << "(" << matrix.NodeCount() << " nodes)" << endl;
     }
-}
-
-void BddSolver::result(Circuit &c) {
-    cout << "Result: ";
-    if (matrix == sylvan_true)
-        cout << "TRUE" << endl;
-    else if (matrix == sylvan_false) 
-        cout << "FALSE" << endl;
-    else {
-        Quantifier q = c.getQuant(1);
-        if (q==Forall)
-            cout << "FALSE. Counterexample: ";
-        else
-            cout << "TRUE. Example: ";
-
-        BddSet vars = BddSet();
-        int firstBlock = c.getBlocks()[0].size();
-        // QBF variables start at 1
-        for (int i=1; i<=firstBlock; i++) {
-            vars.add(i);
-        }
-        // Sylvan vector starts at 0
-        vector<bool> val = matrix.PickOneCube(vars);
-        for (int i=1; i<c.maxVar();i++) {
-            if (val[i-1]==false)
-                cout << -i << " ";
-            else if (val[i-1]==true)
-                cout << i << " ";
-        }
-        cout << endl;
-    }
-    cout << endl;
 }

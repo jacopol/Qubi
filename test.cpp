@@ -69,11 +69,9 @@ void test3() { // check if Sylvan works properly
 void testQbf(BddSolver &s, Circuit c) {
     c.printInfo(cerr);
     s.solveVars(c);
-    s.solveBlocks(c);
 }
 
-void testall() {
-    BddSolver solver(1,1L<<26);
+void testall(BddSolver &solver) {
     testQbf(solver, test_sat1());
     testQbf(solver, test_sat2());
     testQbf(solver, test_qbf0());
@@ -85,6 +83,15 @@ int main() {
     //test1();
     //test2();
     //test3();
-    testall();
+
+    {
+        BddSolver solver1(1,1L<<26);
+        testall(solver1);
+    }
+    {
+        BlockSolver solver2(1,1L<<26);
+        testall(solver2);
+    }
+
     return 0;
 }
