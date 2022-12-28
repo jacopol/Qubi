@@ -2,10 +2,7 @@
 #include <iostream>
 #include "circuit.hpp"
 
-string Quant(Quantifier q) {
-    vector<string> Q = {"Forall", "Exists"};
-    return Q[q];
-}
+const vector<string> Q = {"Forall", "Exists"};
 
 Gate::Gate(Connective c) {
     output=c;
@@ -65,6 +62,9 @@ Quantifier Circuit::getQuant(int i) {
         throw PrefixOutOfBound(i,prefix.size());
     }
 }
+string Circuit::Quant(int i) {
+    return Q[getQuant(i)];
+}
 
 Gate Circuit::getGate(int i) {
     if (prefix.size()<=i && i<matrix.size() + prefix.size()) { 
@@ -80,7 +80,7 @@ vector<vector<int>> Circuit::getBlocks() {
     vector<int> curBlock;
     Quantifier q = getQuant(1);
     for (int i=1; i<prefix.size();i++) {
-        if (getQuant(i)==q) {
+        if (getQuant(i) == q) {
             curBlock.push_back(i);
         }
         else {

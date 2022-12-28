@@ -3,13 +3,13 @@
 
 #include <vector>
 #include <string>
+#include <fstream>
 
 using namespace std;
 
 // where should this go?
 enum Connective {And, Or};
 enum Quantifier {Forall, Exists};
-string Quant(Quantifier q);
 
 class Gate {
     private:
@@ -33,6 +33,7 @@ class Circuit {
 
     public:
         Circuit(string name);
+        Circuit(string name, ifstream &file);
         int maxVar();
         int maxGate();
         void addVar(Quantifier);
@@ -41,6 +42,7 @@ class Circuit {
         int getOutput();
         Gate getGate(int);
         Quantifier getQuant(int);
+        string Quant(int);
         vector<vector<int>> getBlocks(); // get alternating blocks in prefix
         void printInfo(ostream& s);
 };

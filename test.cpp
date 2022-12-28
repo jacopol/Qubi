@@ -20,10 +20,10 @@ void test1() {
     c.addGate(g1);
     c.addGate(g2);
 
-    cout << "Variable 1: " << Quant(c.getQuant(1)) << endl;
-    cout << "Variable 2: " << Quant(c.getQuant(2)) << endl;
+    cout << "Variable 1: " << c.Quant(1) << endl;
+    cout << "Variable 2: " << c.Quant(2) << endl;
     try {
-        c.getQuant(3);
+        c.Quant(3);
     }
     catch (PrefixOutOfBound& e) {
         cout << e.what() << endl;

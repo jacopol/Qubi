@@ -53,12 +53,8 @@ void BddSolver::result(Circuit &c) {
         }
         // Sylvan vector starts at 0
         vector<bool> val = matrix.PickOneCube(vars);
-        for (int i=1; i<=firstBlock;i++) {
-            if (val[i-1]==false)
-                cout << -i << " ";
-            else if (val[i-1]==true)
-                cout << i << " ";
-        }
+        for (int i=1; i<=firstBlock; i++)
+            cout << (val[i-1] ? i : -i) << " ";
         cout << endl;
     }
     cout << endl;
@@ -73,7 +69,7 @@ void BddSolver::matrix2bdd(Circuit &c) {
         else
             return !bdds[-i];
     };
-    for (int i=1; i<c.maxVar();i++) {
+    for (int i=1; i<c.maxVar(); i++) {
         bdds.push_back(Bdd::bddVar(i));
     }
     cerr << "Building BDD for Matrix" << endl;
@@ -113,10 +109,9 @@ void BddSolver::prefix2bdd(Circuit &c) {
             cerr << "(early termination)" << endl;
             break;
         }
-        Quantifier q = c.getQuant(i);
-        cerr << "var " << i << " (" << Quant(q) << "): ";
+        cerr << "var " << i << " (" << c.Quant(i) << "): ";
         Bdd var = Bdd::bddVar(i);
-        if (q==Forall)
+        if (c.getQuant(i) == Forall)
             matrix = matrix.UnivAbstract(var);
         else
             matrix = matrix.ExistAbstract(var);
@@ -135,14 +130,14 @@ void BlockSolver::prefix2bdd(Circuit &c) {
             cerr << "(early termination)" << endl;
             break;
         }
-        Quantifier q = c.getQuant(blocks[i][0]);
-        cerr << "block " << i+1 << " (" << blocks[i].size() << "x " << Quant(q) << "): ";
+        int q = blocks[i][0];
+        cerr << "block " << i+1 << " (" << blocks[i].size() << "x " << c.Quant(q) << "): ";
 
         Bdd cube = sylvan_true;        
         for (int var : blocks[i]) {
             cube *= Bdd::bddVar(var);
         }
-        if (q==Forall)
+        if (c.getQuant(q) == Forall)
             matrix = matrix.UnivAbstract(cube);
         else
             matrix = matrix.ExistAbstract(cube);
