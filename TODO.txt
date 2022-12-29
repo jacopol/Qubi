@@ -1,0 +1,8 @@
+- option for setting tablesize, workers
+- option for verbose mode, silent mode
+- add gates xor, ite 
+- allow non-prefix qcir
+- variable reordering
+- read the actual variable (exists/forall)
+- use (parallel) sylvan disjunction/conjunctions
+- print peak BDD

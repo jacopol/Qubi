@@ -1,13 +1,26 @@
 Usage:
 
-    ./qubi [-block | -single] [infile]
+    ./qubi [-block | -quant] [infile]
     ./qubi -help
 
-    (options can be abbreviated to -b, -s, -h)
+    (options can be abbreviated to -b, -q, -h)
 
 Test:
 
     ./qubi Test/qbf1.qcir
+
+Input:
+
+    File (or stdin) in qcir-14 format (but see Limitations)
+
+Output:
+
+    TRUE/FALSE + (counter)example: instantiation of top-level variables
+
+Limitations:
+
+- currently only supports and/or gates
+- currently only supports prenex format
 
 Build:
 

@@ -1,6 +1,6 @@
 #include <vector>
 #include <iostream>
-#include <assert.h>
+#include "messages.hpp"
 #include "circuit.hpp"
 
 const vector<string> Q = {"Forall", "Exists"};
@@ -23,7 +23,7 @@ void Gate::addInput(int i) {
 
 void Gate::checkLess(int max) {
     for (int i : inputs) {
-        assert(0 < abs(i) && abs(i) < max);
+        assertThrow(0 < abs(i) && abs(i) < max, InputUndefined(i,max));
     }
 }
 
@@ -48,7 +48,7 @@ void Circuit::addGate(Gate g) {
 }
 void Circuit::setOutput(int i) {
     int max = prefix.size() + matrix.size();
-    assert(0 < abs(i) && abs(i) < max);
+    assertThrow(0 < abs(i) && abs(i) < max, OutputUndefined(i,max));
     output = i;
 }
 int Circuit::getOutput() {
@@ -56,17 +56,20 @@ int Circuit::getOutput() {
 }
 
 Quantifier Circuit::getQuant(int i) {
-    assert(0 < i && i < prefix.size());
+    assertThrow(0 < i && i < prefix.size(), PrefixOutOfBound(i,prefix.size()));
     return prefix[i];
 }
+
 string Circuit::Quant(int i) {
     return Q[getQuant(i)];
 }
 
 Gate Circuit::getGate(int i) {
-    assert(prefix.size() <= i && i < matrix.size() + prefix.size());
+    assertThrow(prefix.size() <= i && i < matrix.size() + prefix.size(),
+        MatrixOutOfBound(i,matrix.size() + prefix.size()));
     return matrix[i-prefix.size()];
 }
+
 vector<vector<int>> Circuit::getBlocks() {
     vector<vector<int>> allBlocks;
     vector<int> curBlock;

@@ -5,19 +5,20 @@
 
 using namespace std;
 
-int BLOCK = true; // eliminate single variables or block (default)
+int BLOCK = true; // eliminate single quantifiers or as block
 string NAME;
 istream* INFILE;
 
 int WORKERS = 4;
-long long TABLE = 1L<<26;
+long long TABLE = 1L<<28;
 
 void usage() {
-    cout << "Usage: qubi [-single | -block] [-help] [infile]\n"
+    cout << "Usage: qubi [-q | -b] [-h] [infile]\n"
+         << "Input: [infile] (DEFAULT: stdin). Input QBF problem in QCIR format\n"
          << "Options:\n"
-         << "  -single: \teliminate variables one by one.\n"
-         << "  -block: \teliminate variables in blocks. (DEFAULT)\n"
-         << "  infile: file in qcir (quantified circuit) format (DEFAULT: stdin)" 
+         << "  -q, -quant: \teliminate quantifiers one by one.\n"
+         << "  -b, -block: \teliminate quantifiers in blocks. (DEFAULT)\n"
+         << "  -h, -help; \tthis usage message\n"
          << endl;
     exit(-1);
 }
@@ -35,7 +36,7 @@ void parseArgs(int argc, char* argv[]) {
     int i;
     for (i=1; i<argc; i++) {
         string arg = string(argv[i]);
-        if (arg == "-single" || arg == "-s")
+        if (arg == "-quant" || arg == "-q")
             { BLOCK = false; continue; }
         if (arg == "-block" || arg == "-b")
             { BLOCK = true; continue; }
@@ -45,15 +46,15 @@ void parseArgs(int argc, char* argv[]) {
             NAME = arg;
             INFILE = &openInput(NAME);
             continue;
+        }
         cerr << "Couldn't parse argument: " << argv[i] << endl;
         usage();
-        }
     }
 
     if (NAME == "") {
         NAME = "stdin";
         INFILE = &cin;
-        // INFILE = &openInput("Test/sat1.qcir");
+        // INFILE = &openInput("Test/sat2.qcir"); // for debugging
 
     }
 }

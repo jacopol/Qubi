@@ -1,11 +1,11 @@
 #include <iostream>
 #include <regex>
-#include <assert.h>
 #include "circuit.hpp"
+#include "messages.hpp"
 
 using namespace std;
 
-const regex number("[1-9][0-9]*");
+const regex number("-?[1-9][0-9]*");
 
 void addArgs(Gate &g, string line) {
     // first skip over the = in gate definition
@@ -23,13 +23,14 @@ Circuit::Circuit(string filename, istream &input) {
     string line;
     const auto contains = [&line](string s)->bool 
         { return line.find(s) != string::npos; };
+try {
     while (getline(input, line)) {
         if (contains("#")) { // ignore comments
         }
         else if (contains("exists")) {
             smatch m;
             while (regex_search(line, m, number)) {
-                assert(stoi(m[0]) == c.maxVar());
+                assertThrow(stoi(m[0]) == c.maxVar(), PrefixGap(stoi(m[0])));
                 c.addVar(Exists); // identified by position
                 line = m.suffix();
             }
@@ -37,7 +38,7 @@ Circuit::Circuit(string filename, istream &input) {
         else if (contains("forall")) {
             smatch m;
             while (regex_search(line, m, number)) {
-                assert(stoi(m[0]) == c.maxVar());
+                assertThrow(stoi(m[0]) == c.maxVar(), PrefixGap(stoi(m[0])));
                 c.addVar(Forall); // identified by position
                 line = m.suffix();
             }
@@ -67,4 +68,20 @@ Circuit::Circuit(string filename, istream &input) {
     name   = c.name;
     prefix = c.prefix;
     matrix = c.matrix;
+} catch (InputUndefined& err) { 
+    cout << err.what() << endl; 
+    exit(-1);
+} catch (OutputUndefined& err) { 
+    cout << err.what() << endl; 
+    exit(-1);
+} catch (MatrixOutOfBound& err) { 
+    cout << err.what() << endl; 
+    exit(-1);
+} catch (PrefixOutOfBound& err) { 
+    cout << err.what() << endl; 
+    exit(-1);
+} catch (PrefixGap& err) { 
+    cout << err.what() << endl; 
+    exit(-1);
+}
 }
