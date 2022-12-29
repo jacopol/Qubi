@@ -1,5 +1,5 @@
-#ifndef ERROR_H
-#define ERROR_H
+#ifndef MESSAGES_H
+#define MESSAGES_H
 
 #include <string>
 #include <exception>
@@ -9,7 +9,10 @@ using std::to_string;
 using std::exception;
 
 //void assertThrow(bool assrt, exception excpt);
-#define assertThrow(assrt, excpt) { if (!(assrt)) throw excpt; }
+#define assertThrow(assrt, excpt) { if (!(assrt)) { throw excpt; }}
+
+#define LOG(level, msg) { if (level<=verbose) {cerr << msg; }}
+#define LOGln(level, msg) { if (level<=verbose) {cerr << msg << endl; }}
 
 class PrefixOutOfBound : public exception {
 private:

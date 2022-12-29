@@ -7,19 +7,24 @@
 
 class BddSolver {
     protected:
-        sylvan::Bdd matrix;
+        sylvan::Bdd matrix; // keeps current state of algorithm
+        bool witness;       // example requested?
+        int verbose;        // level of verbosity
 
-        // protocol:
-        // - call matrix2bdd                    (defines Bdd matrix)
-        // - then call prefix2bdd or blocks2bdd (eliminates prefix except first block)
-        // - finally call result                (concludes and prints counter-example)
+        // Protocol:
+        // - call matrix2bdd                  (defines the Bdd matrix)
+        // - then call prefix2bdd             (eliminates prefix except first block)
+        // - finally call result / example    (prints verdict and counter-example)
         
-        virtual void matrix2bdd(Circuit &);
+        void matrix2bdd(Circuit &);
         virtual void prefix2bdd(Circuit &);
-        virtual void result(Circuit &);
+        void result(Circuit &);
+        void example(Circuit &);
 
     public:
         BddSolver(int workers, long long maxnodes);
+        BddSolver& setExample(bool example);
+        BddSolver& setVerbose(int verbosity);
         ~BddSolver();
         void solve(Circuit &);
 };

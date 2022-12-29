@@ -90,9 +90,9 @@ vector<vector<int>> Circuit::getBlocks() {
 }
 
 void Circuit::printInfo(std::ostream &s) {
-    s   << "Quantified Circuit \"" << name << "\", with " 
-        << prefix.size()-1 << " variables, " 
-        << matrix.size() << " gates, " 
-        << getBlocks().size() << " quantifier blocks."
+    s   << "Quantified Circuit \"" << name << "\" (" 
+        << prefix.size()-1 << " vars in " 
+        << getBlocks().size() << " blocks, "
+        << matrix.size() << " gates)" 
         << std::endl;
 }
