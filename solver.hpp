@@ -4,6 +4,7 @@
 #include <sylvan.h>
 #include <sylvan_obj.hpp>
 #include "circuit.hpp"
+
 class BddSolver {
     protected:
         sylvan::Bdd matrix;
@@ -20,7 +21,7 @@ class BddSolver {
     public:
         BddSolver(int workers, long long maxnodes);
         ~BddSolver();
-        void solveVars(Circuit &);
+        void solve(Circuit &);
 };
 
 class BlockSolver : public BddSolver {

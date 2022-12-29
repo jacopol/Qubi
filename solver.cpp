@@ -2,6 +2,10 @@
 #include <vector>
 #include "solver.hpp"
 
+using std::cout;
+using std::cerr;
+using std::endl;
+
 using namespace sylvan;
 
 BddSolver::BddSolver(int workers, long long maxnodes) {
@@ -24,7 +28,7 @@ BddSolver::~BddSolver() {
     std::cerr << "Closed Sylvan BDDs" << std::endl;
 }
 
-void BddSolver::solveVars(Circuit &c) {
+void BddSolver::solve(Circuit &c) {
     matrix2bdd(c);
     prefix2bdd(c);
     result(c);
@@ -57,7 +61,6 @@ void BddSolver::result(Circuit &c) {
             cout << (val[i-1] ? i : -i) << " ";
         cout << endl;
     }
-    cout << endl;
 }
 
 void BddSolver::matrix2bdd(Circuit &c) {
@@ -74,7 +77,7 @@ void BddSolver::matrix2bdd(Circuit &c) {
     }
     cerr << "Building BDD for Matrix" << endl;
     for (int i=c.maxVar(); i<c.maxGate();i++) {
-        cerr << "gate " << i;
+        cerr << "- gate " << i;
         Gate g = c.getGate(i);
         bool isAnd = g.getConn()==And;
         // Build a conjunction or disjunction:
@@ -109,7 +112,7 @@ void BddSolver::prefix2bdd(Circuit &c) {
             cerr << "(early termination)" << endl;
             break;
         }
-        cerr << "var " << i << " (" << c.Quant(i) << "): ";
+        cerr << "- var " << i << " (" << c.Quant(i) << "): ";
         Bdd var = Bdd::bddVar(i);
         if (c.getQuant(i) == Forall)
             matrix = matrix.UnivAbstract(var);
@@ -131,7 +134,7 @@ void BlockSolver::prefix2bdd(Circuit &c) {
             break;
         }
         int q = blocks[i][0];
-        cerr << "block " << i+1 << " (" << blocks[i].size() << "x " << c.Quant(q) << "): ";
+        cerr << "- block " << i+1 << " (" << blocks[i].size() << "x " << c.Quant(q) << "): ";
 
         Bdd cube = sylvan_true;        
         for (int var : blocks[i]) {

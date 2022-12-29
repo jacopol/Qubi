@@ -1,5 +1,4 @@
 #include <iostream>
-#include <fstream>
 #include <regex>
 #include <assert.h>
 #include "circuit.hpp"
@@ -19,13 +18,13 @@ void addArgs(Gate &g, string line) {
     }
 }
 
-Circuit::Circuit(string filename, ifstream &infile) {
+Circuit::Circuit(string filename, istream &input) {
     Circuit c(filename); // we start constructing an empty circuit
     string line;
     const auto contains = [&line](string s)->bool 
         { return line.find(s) != string::npos; };
-    while (getline(infile, line)) {
-        if (contains("#QCIR-G14")) { // ignore header-line
+    while (getline(input, line)) {
+        if (contains("#")) { // ignore comments
         }
         else if (contains("exists")) {
             smatch m;
@@ -65,7 +64,7 @@ Circuit::Circuit(string filename, ifstream &infile) {
     }
     c.setOutput(output); // only to check the output gate
     // output is already set
-    name = c.name;
+    name   = c.name;
     prefix = c.prefix;
     matrix = c.matrix;
 }

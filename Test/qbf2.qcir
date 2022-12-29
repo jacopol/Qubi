@@ -1,0 +1,17 @@
+#QCIR-G14
+#
+# Prefix:
+#
+forall(1)
+exists(2)
+forall(3,4)
+#
+# Output:
+#
+output(7)
+#
+# Matrix:
+#
+4 = or(2, -3)
+5 = or(3, -4)
+6 = and(5, 6, 4)

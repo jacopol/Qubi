@@ -3,9 +3,9 @@
 
 #include <vector>
 #include <string>
-#include <fstream>
 
-using namespace std;
+using std::vector;
+using std::string;
 
 // where should this go?
 enum Connective {And, Or};
@@ -33,7 +33,7 @@ class Circuit {
 
     public:
         Circuit(string name);
-        Circuit(string name, ifstream &file);
+        Circuit(string name, std::istream &input);
         int maxVar();
         int maxGate();
         void addVar(Quantifier);
@@ -44,7 +44,7 @@ class Circuit {
         Quantifier getQuant(int);
         string Quant(int);
         vector<vector<int>> getBlocks(); // get alternating blocks in prefix
-        void printInfo(ostream& s);
+        void printInfo(std::ostream& s);
 };
 
 #endif

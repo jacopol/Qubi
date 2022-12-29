@@ -58,7 +58,7 @@ void test3() { // check if Sylvan works properly
 
 void testQbf(BddSolver &s, Circuit c) {
     c.printInfo(cerr);
-    s.solveVars(c);
+    s.solve(c);
 }
 
 void testall(BddSolver &solver) {
