@@ -74,7 +74,7 @@ void parseArgs(int argc, char* argv[]) {
 int main(int argc, char *argv[]) {
     parseArgs(argc, argv);
     Circuit qcir(NAME, *INFILE);
-    qcir.printInfo(cerr);
+    if (VERBOSE>=1) qcir.printInfo(cerr);
     BddSolver* solver =
         (BLOCK 
             ? new BlockSolver(WORKERS, TABLE)

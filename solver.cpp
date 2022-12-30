@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vector>
-#include "messages.hpp"
 #include "solver.hpp"
 
 using std::cout;
@@ -8,6 +7,8 @@ using std::cerr;
 using std::endl;
 
 using namespace sylvan;
+
+#define LOG(level, msg) { if (level<=verbose) {cerr << msg; }}
 
 BddSolver::BddSolver(int workers, long long maxnodes) {
     lace_start(workers, 0); // deque_size 0
@@ -68,8 +69,11 @@ void BddSolver::result(Circuit &c) {
 void BddSolver::example(Circuit &c) {
     // Here we assume that all variables except for 
     // the first (outermost) block have been eliminated
-    if (matrix != sylvan_true && matrix != sylvan_false) {
-        cout << "Example: ";
+    cout << "Example: ";
+    if (matrix.isOne() || matrix.isZero()) {
+        cout << "None" << endl;
+    }
+    else {
         BddSet vars = BddSet();
         int firstBlock = c.getBlocks()[0].size();
         // QBF variables start at 1
@@ -96,7 +100,7 @@ void BddSolver::matrix2bdd(Circuit &c) {
     for (int i=1; i<c.maxVar(); i++) {
         bdds.push_back(Bdd::bddVar(i));
     }
-    LOGln(1,"Building BDD for Matrix");
+    LOG(1,"Building BDD for Matrix" << endl;);
     for (int i=c.maxVar(); i<c.maxGate();i++) {
         LOG(2,"- gate " << i);
         Gate g = c.getGate(i);
@@ -110,7 +114,7 @@ void BddSolver::matrix2bdd(Circuit &c) {
             else
                 bdd += toBdd(arg);  // disjunction
             }
-        LOGln(2," (" << bdd.NodeCount() << " nodes)");
+        LOG(2," (" << bdd.NodeCount() << " nodes)" << endl);
         bdds.push_back(bdd);
         // bdd.PrintDot(stdout);
     }
@@ -118,7 +122,7 @@ void BddSolver::matrix2bdd(Circuit &c) {
 }
 
 void BddSolver::prefix2bdd(Circuit &c) {
-    LOGln(1,"Quantifying Prefix, per quantifier");
+    LOG(1,"Quantifying Prefix, per quantifier" << endl);
 
     // determine start of second block
     int second;
@@ -130,7 +134,7 @@ void BddSolver::prefix2bdd(Circuit &c) {
     // quantify the prefix, from end to "second", until fully resolved
     for (int i=c.maxVar()-1; i>=second; i--) {
         if (matrix == sylvan_true || matrix == sylvan_false) {
-            LOGln(1,"  (early termination)");
+            LOG(1,"  (early termination)" << endl);
             break;
         }
         LOG(2,"- var " << i << " (" << c.Quant(i) << "): ");
@@ -139,19 +143,19 @@ void BddSolver::prefix2bdd(Circuit &c) {
             matrix = matrix.UnivAbstract(var);
         else
             matrix = matrix.ExistAbstract(var);
-        LOGln(2,"(" << matrix.NodeCount() << " nodes)");
+        LOG(2,"(" << matrix.NodeCount() << " nodes)" << endl);
     }
 }
 
 // override
 void BlockSolver::prefix2bdd(Circuit &c) {
-    LOGln(1,"Quantifying Prefix, per block");
+    LOG(1,"Quantifying Prefix, per block" << endl);
     vector<vector<int>> blocks = c.getBlocks();
 
     // Quantify blocks from last to second, unless fully resolved
     for (int i=blocks.size()-1; i>0; i--) {
         if (matrix == sylvan_true || matrix == sylvan_false) {
-            LOGln(1, "  (early termination)");
+            LOG(1, "  (early termination)" << endl);
             break;
         }
         int q = blocks[i][0];
@@ -165,6 +169,6 @@ void BlockSolver::prefix2bdd(Circuit &c) {
             matrix = matrix.UnivAbstract(cube);
         else
             matrix = matrix.ExistAbstract(cube);
-        LOGln(2,"(" << matrix.NodeCount() << " nodes)");
+        LOG(2,"(" << matrix.NodeCount() << " nodes)" << endl);
     }
 }

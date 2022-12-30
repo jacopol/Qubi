@@ -11,72 +11,55 @@ using std::exception;
 //void assertThrow(bool assrt, exception excpt);
 #define assertThrow(assrt, excpt) { if (!(assrt)) { throw excpt; }}
 
-#define LOG(level, msg) { if (level<=verbose) {cerr << msg; }}
-#define LOGln(level, msg) { if (level<=verbose) {cerr << msg << endl; }}
-
-class PrefixOutOfBound : public exception {
-private:
+class QBFexception : public exception {
+protected:
     int index;
     int size;
 public:
-    PrefixOutOfBound(int i, int s) {
-        index = i;
-        size = s;
+    QBFexception(int index, int size) {
+        this->index = index;
+        this->size = size;
     }
+    virtual string what() {
+        return "QBF exception: index=" + to_string(index) + " size=" + to_string(size-1);
+    }
+};
+
+class PrefixOutOfBound : public QBFexception {
+public:
+    PrefixOutOfBound(int index, int size) : QBFexception(index,size) {}
     string what() {
         return "Variable " + to_string(index) + " is not in Prenex [1.." + to_string(size-1) + "]";
     }
 };
 
-class MatrixOutOfBound : public exception {
-private:
-    int index;
-    int size;
+class MatrixOutOfBound : public QBFexception {
 public:
-    MatrixOutOfBound(int i, int s) {
-        index = i;
-        size = s;
-    }
+    MatrixOutOfBound(int index, int size) : QBFexception(index,size) {}
     string what(){
        return "Gate " + to_string(index) + " is not defined [1.." + to_string(size-1) + "]";
 }
 };
 
-class InputUndefined : public exception {
-private:
-    int index;
-    int size;
+class InputUndefined : public QBFexception {
 public:
-    InputUndefined(int i, int s) {
-        index = i;
-        size = s;
-    }
+    InputUndefined(int index, int size) : QBFexception(index,size) {}
     string what() {
         return "Input " + to_string(index) + " to Gate " + to_string(size) + " is not yet defined";
     }
 };
 
-class OutputUndefined : public exception {
-private:
-    int index;
-    int size;
+class OutputUndefined : public QBFexception {
 public:
-    OutputUndefined(int i, int s) {
-        index = i;
-        size = s;
-    }
+    OutputUndefined(int index, int size) : QBFexception(index,size) {}
     string what() {
         return "Input " + to_string(index) + " to Output Gate is not defined";
     }
 };
 
-class PrefixGap : public exception {
-private:
-    int index;
+class PrefixGap : public QBFexception {
 public:
-    PrefixGap(int i) {
-        index = i;
-    }
+    PrefixGap(int index): QBFexception(index,-1) {}
     string what() {
         return "Prefix has a gap at variable " + to_string(index);
     }
