@@ -1,8 +1,15 @@
-- option for setting tablesize, workers
-- option for verbose mode, silent mode
-- add gates xor, ite 
 - allow non-prefix qcir
+- allow gates xor, ite
+
+- preprocessing:
+  . early quantification (non-prenex)
+  . transform back to prenex
+  . combine blocks
+  . flatten blocks
+
 - variable reordering
-- read the actual variable (exists/forall)
+- use pairwise disjunction / conjunction
 - use (parallel) sylvan disjunction/conjunctions
+
+- option for setting tablesize, workers
 - print peak BDD

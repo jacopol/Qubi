@@ -5,7 +5,7 @@
 #include <sylvan_obj.hpp>
 #include "circuit.hpp"
 
-class BddSolver {
+class Solver {
     protected:
         sylvan::Bdd matrix; // keeps current state of algorithm
         bool witness;       // example requested?
@@ -17,23 +17,16 @@ class BddSolver {
         // - finally call result / example    (prints verdict and counter-example)
         
         void matrix2bdd(Circuit &);
-        virtual void prefix2bdd(Circuit &);
+        void prefix2bdd(Circuit &);
         void result(Circuit &);
         void example(Circuit &);
 
     public:
-        BddSolver(int workers, long long maxnodes);
-        BddSolver& setExample(bool example);
-        BddSolver& setVerbose(int verbosity);
-        ~BddSolver();
+        Solver(int workers, long long maxnodes);
+        Solver& setExample(bool example);
+        Solver& setVerbose(int verbosity);
+        ~Solver();
         void solve(Circuit &);
-};
-
-class BlockSolver : public BddSolver {
-    private:
-        void prefix2bdd(Circuit &); // overridden
-    public:
-        BlockSolver(int workers, long long maxnodes);
 };
 
 #endif // SYLVANBDD_H

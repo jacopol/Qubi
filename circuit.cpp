@@ -1,98 +1,74 @@
 #include <vector>
 #include <iostream>
-#include "messages.hpp"
+#include <assert.h>
 #include "circuit.hpp"
 
-const vector<string> Q = {"Forall", "Exists"};
-
-Gate::Gate(Connective c) {
-    output=c;
+Circuit::Circuit(string filename) {
+    name = filename;
+    varnames = vector<string>();
 }
 
-Connective Gate::getConn() {
-    return output;
+int Circuit::maxVar() { 
+    return maxvar; 
 }
 
-vector<int> Gate::getArgs() {
-    return inputs;
-}
-
-void Gate::addInput(int i) {
-    inputs.push_back(i);
-}
-
-void Gate::checkLess(int max) {
-    for (int i : inputs) {
-        assertThrow(0 < abs(i) && abs(i) < max, InputUndefined(i,max));
-    }
-}
-
-Circuit::Circuit(string s) {
-    // index 0 will never be used to avoid confusion 0/-0
-    prefix.push_back(Forall);
-    name=s;
-}
-void Circuit::addVar(Quantifier q) {
-    prefix.push_back(q);
-}
-int Circuit::maxVar() {
+int Circuit::maxBlock() {
     return prefix.size();
 }
+
 int Circuit::maxGate() {
-    return prefix.size()+matrix.size();
+    return matrix.size() + maxvar;
 }
-void Circuit::addGate(Gate g) {
-    // check that all inputs are defined
-    g.checkLess(prefix.size() + matrix.size());
+
+Circuit& Circuit::addBlock(Block b) { 
+    prefix.push_back(b);
+    return *this;
+}
+
+Block Circuit::getBlock(int i) { 
+    assert(i<prefix.size());
+    return prefix[i]; 
+}
+
+Circuit& Circuit::addGate(Gate g) {
     matrix.push_back(g);
-}
-void Circuit::setOutput(int i) {
-    int max = prefix.size() + matrix.size();
-    assertThrow(0 < abs(i) && abs(i) < max, OutputUndefined(i,max));
-    output = i;
-}
-int Circuit::getOutput() {
-    return output;
-}
-
-Quantifier Circuit::getQuant(int i) {
-    assertThrow(0 < i && i < prefix.size(), PrefixOutOfBound(i,prefix.size()));
-    return prefix[i];
-}
-
-string Circuit::Quant(int i) {
-    return Q[getQuant(i)];
+    return *this;
 }
 
 Gate Circuit::getGate(int i) {
-    assertThrow(prefix.size() <= i && i < matrix.size() + prefix.size(),
-        MatrixOutOfBound(i,matrix.size() + prefix.size()));
-    return matrix[i-prefix.size()];
+    assert(maxvar <= i && i < maxvar + matrix.size());
+    return matrix[i-maxvar];
 }
 
-vector<vector<int>> Circuit::getBlocks() {
-    vector<vector<int>> allBlocks;
-    vector<int> curBlock;
-    Quantifier q = getQuant(1);
-    for (int i=1; i<prefix.size();i++) {
-        if (getQuant(i) == q) {
-            curBlock.push_back(i);
-        }
-        else { // start a new block
-            q = getQuant(i);
-            allBlocks.push_back(curBlock);
-            curBlock = vector<int>();
-            curBlock.push_back(i);
-        }
-    }
-    allBlocks.push_back(curBlock);
-    return allBlocks;
+Circuit& Circuit::setOutput(int out) {
+    output = out + maxvar;
+    return *this;
+}
+
+int Circuit::getOutput() {
+    return output - maxvar;
+}
+
+Circuit& Circuit::setVar(string var, int i) {
+    assert(i==varnames.size()+1);
+    vars[var] = i;
+    varnames.push_back(var);
+    return *this;
+}
+
+int Circuit::getVar(string var) {
+    return vars[var];
+}
+
+string Circuit::getVarOrGate(int i) {
+    assert(i<=varnames.size());
+    return varnames[i-1];
 }
 
 void Circuit::printInfo(std::ostream &s) {
     s   << "Quantified Circuit \"" << name << "\" (" 
-        << prefix.size()-1 << " vars in " 
-        << getBlocks().size() << " blocks, "
+        << maxvar << " vars in " 
+        << prefix.size() << " blocks, "
         << matrix.size() << " gates)" 
         << std::endl;
 }

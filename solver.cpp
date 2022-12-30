@@ -10,7 +10,7 @@ using namespace sylvan;
 
 #define LOG(level, msg) { if (level<=verbose) {cerr << msg; }}
 
-BddSolver::BddSolver(int workers, long long maxnodes) {
+Solver::Solver(int workers, long long maxnodes) {
     lace_start(workers, 0); // deque_size 0
     long long initnodes = maxnodes >> 8;
     long long maxcache = maxnodes >> 4;
@@ -21,35 +21,32 @@ BddSolver::BddSolver(int workers, long long maxnodes) {
     // cerr << "Opening Sylvan BDDs" << endl;
 }
 
-BddSolver& BddSolver::setExample(bool example) {
+Solver& Solver::setExample(bool example) {
     witness = example;
     return *this;
 }
 
-BddSolver& BddSolver::setVerbose(int verbosity) {
+Solver& Solver::setVerbose(int verbosity) {
     verbose = verbosity;
     return *this;
 }
 
 
-BlockSolver::BlockSolver(int workers, long long maxnodes) 
-    : BddSolver(workers, maxnodes) {}
-
-BddSolver::~BddSolver() {
+Solver::~Solver() {
     sylvan_stats_report(stdout); // if SYLVAN_STATS is set
     sylvan_quit();
     lace_stop();
     // cerr << "Closed Sylvan BDDs" << endl;
 }
 
-void BddSolver::solve(Circuit &c) {
+void Solver::solve(Circuit &c) {
     matrix2bdd(c);
     prefix2bdd(c);
     result(c);
     if (witness) example(c);
 }
 
-void BddSolver::result(Circuit &c) {
+void Solver::result(Circuit &c) {
     // Here we assume that all variables except for 
     // the first (outermost) block have been eliminated
     cout << "Result: ";
@@ -58,7 +55,7 @@ void BddSolver::result(Circuit &c) {
     else if (matrix == sylvan_false) 
         cout << "FALSE" << endl;
     else {
-        Quantifier q = c.getQuant(1);
+        Quantifier q = c.getBlock(0).quantifier;
         if (q==Forall)
             cout << "FALSE" << endl;
         else
@@ -66,7 +63,7 @@ void BddSolver::result(Circuit &c) {
     }
 }
 
-void BddSolver::example(Circuit &c) {
+void Solver::example(Circuit &c) {
     // Here we assume that all variables except for 
     // the first (outermost) block have been eliminated
     cout << "Example: ";
@@ -75,7 +72,7 @@ void BddSolver::example(Circuit &c) {
     }
     else {
         BddSet vars = BddSet();
-        int firstBlock = c.getBlocks()[0].size();
+        int firstBlock = c.getBlock(0).size();
         // QBF variables start at 1
         for (int i=1; i<=firstBlock; i++) {
             vars.add(i);
@@ -88,7 +85,7 @@ void BddSolver::example(Circuit &c) {
     }
 }
 
-void BddSolver::matrix2bdd(Circuit &c) {
+void Solver::matrix2bdd(Circuit &c) {
     vector<Bdd> bdds;                    // lookup table previous BDDs
     bdds.push_back(sylvan_true);         // unused entry 0
     auto toBdd = [&bdds](int i)-> Bdd {  // negate (if necessary) and look up Bdd
@@ -102,12 +99,12 @@ void BddSolver::matrix2bdd(Circuit &c) {
     }
     LOG(1,"Building BDD for Matrix" << endl;);
     for (int i=c.maxVar(); i<c.maxGate();i++) {
-        LOG(2,"- gate " << i);
+        LOG(2,"- gate " << c.getVarOrGate(i));
         Gate g = c.getGate(i);
-        bool isAnd = g.getConn()==And;
+        bool isAnd = g.output==And;
         // Build a conjunction or disjunction:
         Bdd bdd = ( isAnd ? sylvan_true : sylvan_false); // neutral element
-        for (int arg: g.getArgs()) {
+        for (int arg: g.inputs) {
             LOG(2,".");
             if (isAnd)
                 bdd *= toBdd(arg);  // conjunction
@@ -121,51 +118,24 @@ void BddSolver::matrix2bdd(Circuit &c) {
     matrix = toBdd(c.getOutput()); // final result
 }
 
-void BddSolver::prefix2bdd(Circuit &c) {
-    LOG(1,"Quantifying Prefix, per quantifier" << endl);
-
-    // determine start of second block
-    int second;
-    for (second=1 ; second < c.maxVar(); second++) {
-        if (c.getQuant(second) != c.getQuant(1)) 
-            break;
-    }
-
-    // quantify the prefix, from end to "second", until fully resolved
-    for (int i=c.maxVar()-1; i>=second; i--) {
-        if (matrix == sylvan_true || matrix == sylvan_false) {
-            LOG(1,"  (early termination)" << endl);
-            break;
-        }
-        LOG(2,"- var " << i << " (" << c.Quant(i) << "): ");
-        Bdd var = Bdd::bddVar(i);
-        if (c.getQuant(i) == Forall)
-            matrix = matrix.UnivAbstract(var);
-        else
-            matrix = matrix.ExistAbstract(var);
-        LOG(2,"(" << matrix.NodeCount() << " nodes)" << endl);
-    }
-}
-
 // override
-void BlockSolver::prefix2bdd(Circuit &c) {
-    LOG(1,"Quantifying Prefix, per block" << endl);
-    vector<vector<int>> blocks = c.getBlocks();
+void Solver::prefix2bdd(Circuit &c) {
+    LOG(1,"Quantifying Prefix" << endl);
 
     // Quantify blocks from last to second, unless fully resolved
-    for (int i=blocks.size()-1; i>0; i--) {
+    for (int i=c.maxBlock()-1; i>0; i--) {
         if (matrix == sylvan_true || matrix == sylvan_false) {
             LOG(1, "  (early termination)" << endl);
             break;
         }
-        int q = blocks[i][0];
-        LOG(2,"- block " << i+1 << " (" << blocks[i].size() << "x " << c.Quant(q) << "): ");
+        Block b = c.getBlock(i);
+        LOG(2,"- block " << i+1 << " (" << b.size() << "x " << b.getQuantifier() << "): ");
 
         Bdd cube = sylvan_true;        
-        for (int var : blocks[i]) {
+        for (int var : b.variables) {
             cube *= Bdd::bddVar(var);
         }
-        if (c.getQuant(q) == Forall)
+        if (b.quantifier == Forall)
             matrix = matrix.UnivAbstract(cube);
         else
             matrix = matrix.ExistAbstract(cube);

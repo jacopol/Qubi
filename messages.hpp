@@ -13,55 +13,47 @@ using std::exception;
 
 class QBFexception : public exception {
 protected:
-    int index;
-    int size;
+    string input;
+    int line;
 public:
-    QBFexception(int index, int size) {
-        this->index = index;
-        this->size = size;
+    QBFexception(string input, int line) {
+        this->input = input;
+        this->line = line;
     }
     virtual string what() {
-        return "QBF exception: index=" + to_string(index) + " size=" + to_string(size-1);
+        return "QCIR error (unexpected)";
     }
-};
-
-class PrefixOutOfBound : public QBFexception {
-public:
-    PrefixOutOfBound(int index, int size) : QBFexception(index,size) {}
-    string what() {
-        return "Variable " + to_string(index) + " is not in Prenex [1.." + to_string(size-1) + "]";
-    }
-};
-
-class MatrixOutOfBound : public QBFexception {
-public:
-    MatrixOutOfBound(int index, int size) : QBFexception(index,size) {}
-    string what(){
-       return "Gate " + to_string(index) + " is not defined [1.." + to_string(size-1) + "]";
-}
 };
 
 class InputUndefined : public QBFexception {
 public:
-    InputUndefined(int index, int size) : QBFexception(index,size) {}
+    InputUndefined(string input, int line) : QBFexception(input, line) {}
     string what() {
-        return "Input " + to_string(index) + " to Gate " + to_string(size) + " is not yet defined";
+        return "Error: Input \"" + input + "\" on line " + to_string(line) + " is undefined";
     }
 };
 
-class OutputUndefined : public QBFexception {
+class VarDefined : public QBFexception {
 public:
-    OutputUndefined(int index, int size) : QBFexception(index,size) {}
+    VarDefined(string input, int line): QBFexception(input, line) {}
     string what() {
-        return "Input " + to_string(index) + " to Output Gate is not defined";
+        return "Error: Variable \"" + input + "\" on line " + to_string(line) + " was already defined";
     }
 };
 
-class PrefixGap : public QBFexception {
+class ParseError : public QBFexception {
 public:
-    PrefixGap(int index): QBFexception(index,-1) {}
+    ParseError(string input, int line): QBFexception(input, line) {}
     string what() {
-        return "Prefix has a gap at variable " + to_string(index);
+        return "Error: could not parse \"" + input + "\" on line " + to_string(line);
+    }
+};
+
+class OutputMissing : public QBFexception {
+public:
+    OutputMissing(): QBFexception("", -1) {}
+    string what() {
+        return "Parse error: no output(...) gate specified";
     }
 };
 
