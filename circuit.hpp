@@ -1,3 +1,6 @@
+// (c) Jaco van de Pol
+// Aarhus University
+
 #ifndef CIRCUIT_H
 #define CIRCUIT_H
 

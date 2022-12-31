@@ -1,3 +1,6 @@
+// (c) Jaco van de Pol
+// Aarhus University
+
 #include <iostream>
 #include <vector>
 #include "solver.hpp"

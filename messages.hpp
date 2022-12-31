@@ -1,3 +1,6 @@
+// (c) Jaco van de Pol
+// Aarhus University
+
 #ifndef MESSAGES_H
 #define MESSAGES_H
 

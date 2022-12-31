@@ -1,3 +1,6 @@
+// (c) Jaco van de Pol
+// Aarhus University
+
 #ifndef SYLVANBDD_H
 #define SYLVANBDD_H
 

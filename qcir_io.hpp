@@ -1,3 +1,6 @@
+// (c) Jaco van de Pol
+// Aarhus University
+
 #ifndef QCIR_IO
 #define QCIR_IO
 

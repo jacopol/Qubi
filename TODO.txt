@@ -1,16 +1,21 @@
-- allow non-prefix qcir
+Extensions Input:
+
 - allow gates xor, ite
+- allow non-prefix qcir
+- allow free variables
 
-- preprocessing:
-  . early quantification (non-prenex)
-  . transform back to prenex
-  . combine blocks
-  . flatten blocks
+Preprocessing:
+- early quantification (non-prenex)
+- transform back to prenex
+- combine blocks
+- flatten blocks
 
+Solving:
 - variable reordering
 - use pairwise disjunction / conjunction
-- use (parallel) sylvan disjunction/conjunctions
+- use parallel disjunction/conjunctions
 
+Improvements:
 - option for setting tablesize, workers
 - print peak BDD
 
@@ -18,8 +23,7 @@
 - make parsing survive and/or as gate names
 - test with no variables, only empty and/or gate
 
-- print BDD with indices as names + option
-- option to print BDD to file
-
+- print gates and/or example with names/indices
 - refactor: Reading and Writing in another class (try decorator pattern?)
-- refactor: Solver could be a separate class?
+- refactor: Solver could be an abstract class / interface
+- refactor: generealize to other BDD packages

@@ -1,3 +1,6 @@
+// (c) Jaco van de Pol
+// Aarhus University
+
 #include <iostream>
 #include <fstream>
 #include "circuit.hpp"
@@ -79,7 +82,7 @@ void parseArgs(int argc, char* argv[]) {
     if (NAME == "") {
         NAME = "stdin";
         INFILE = &cin;
-        INFILE = &openInput("Test/qbf2.qcir"); // for debugging
+        // INFILE = &openInput("Test/qbf2.qcir"); // for debugging
 
     }
 }
