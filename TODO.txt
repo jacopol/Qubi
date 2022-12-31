@@ -21,5 +21,5 @@
 - print BDD with indices as names + option
 - option to print BDD to file
 
-- refactor: Reading and Writing in another class (design pattern?)
+- refactor: Reading and Writing in another class (try decorator pattern?)
 - refactor: Solver could be a separate class?

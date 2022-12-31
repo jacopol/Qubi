@@ -3,9 +3,8 @@
 #include <assert.h>
 #include "circuit.hpp"
 
-Circuit::Circuit(string filename) {
-    name = filename;
-    varnames = vector<string>({""}); // start from first position
+Circuit::Circuit(string name_) {
+    name = name_;
 }
 
 int Circuit::maxVar() { 
@@ -47,17 +46,6 @@ Circuit& Circuit::setOutput(int out) {
 
 int Circuit::getOutput() {
     return output;
-}
-
-Circuit& Circuit::setVar(string var, int i) {
-    assert(i==varnames.size());
-    vars[var] = i;
-    varnames.push_back(var);
-    return *this;
-}
-
-int Circuit::getVar(string var) {
-    return vars[var];
 }
 
 string& Circuit::getVarOrGate(int i) {

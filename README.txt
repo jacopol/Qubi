@@ -1,16 +1,15 @@
-Usage:
-
-Usage:  qubi [-e] [-q | -b] [-p] [-v | -s] [infile]
+Usage:  qubi [-e] [-q | -b] [-p] [-k] [-v | -s] [infile]
         qubi [-h]
 
 Input:   [infile] (DEFAULT: stdin). Input QBF problem in QCIR format
-Output:  [TRUE | FALSE] -- the solution of the QBF
+Output:  Result: [TRUE | FALSE] -- the solution of the QBF
 
 Options:
   -e, -example:         show witness for outermost quantifiers.
   -q, -quant:           transform: each quantifier is a block.
   -b, -block:           transform: each block is maximal.
   -p, -print:           print the (transformed) qcir to stdout.
+  -k, -keep:            keep the original gate/var names.
   -v, -verbose:         verbose, show intermediate progress.
   -s, -silent:          show the output only.
   -h, -help:            this usage message

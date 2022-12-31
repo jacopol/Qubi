@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include "circuit.hpp"
+#include "qcir_io.hpp"
 #include "solver.hpp"
 
 using namespace std;
@@ -8,7 +9,9 @@ using namespace std;
 bool BLOCK = true; // eliminate single quantifiers or as block
 bool EXAMPLE = false;
 bool PRINT = false;
+bool KEEP = false;
 int VERBOSE = 1;
+
 
 string NAME;
 istream* INFILE;
@@ -18,7 +21,7 @@ long long TABLE = 1L<<28;
 
 void usage() {
     cout << "Usage:"
-         << "\tqubi [-e] [-q | -b] [-p] [-v | -s] [infile]\n"
+         << "\tqubi [-e] [-q | -b] [-p] [-k] [-v | -s] [infile]\n"
          << "\tqubi [-h]\n\n"
          << "Input:\t [infile] (DEFAULT: stdin). Input QBF problem in QCIR format\n"
          << "Output:\t Result: [TRUE | FALSE] -- the solution of the QBF\n\n"
@@ -27,6 +30,7 @@ void usage() {
          << "  -q, -quant: \t\ttransform: each quantifier is a block.\n"
          << "  -b, -block: \t\ttransform: each block is maximal.\n"
          << "  -p, -print: \t\tprint the (transformed) qcir to stdout.\n"
+         << "  -k, -keep: \t\tkeep the original gate/var names.\n"
          << "  -v, -verbose: \tverbose, show intermediate progress.\n"
          << "  -s, -silent: \t\tshow the output only.\n"
          << "  -h, -help: \t\tthis usage message\n"
@@ -51,10 +55,12 @@ void parseArgs(int argc, char* argv[]) {
             { EXAMPLE = true; continue; }
         if (arg == "-quant" || arg == "-q")
             { BLOCK = false; continue; }
-        if (arg == "-print" || arg == "-p")
-            { PRINT = true; continue; }
         if (arg == "-block" || arg == "-b")
             { BLOCK = true; continue; }
+        if (arg == "-print" || arg == "-p")
+            { PRINT = true; continue; }
+        if (arg == "-keep" || arg == "-k")
+            { KEEP = true; continue; }
         if (arg == "-verbose" || arg == "-v")
             { VERBOSE = 2; continue; }
         if (arg == "-silent" || arg == "-s")
@@ -80,11 +86,12 @@ void parseArgs(int argc, char* argv[]) {
 
 int main(int argc, char *argv[]) {
     parseArgs(argc, argv);
-    Circuit qcir(NAME);
-    qcir.readQcir(*INFILE);
+    Circuit qcir(NAME); 
+    Qcir_IO rw(qcir,KEEP);
+    rw.readQcir(*INFILE);
     if (VERBOSE>=1) qcir.printInfo(cerr);
     if (PRINT) {
-        qcir.writeQcir(cout);
+        rw.writeQcir(cout);
     } else {
         Solver solver = Solver(WORKERS, TABLE);
         solver.setVerbose(VERBOSE).setExample(EXAMPLE);

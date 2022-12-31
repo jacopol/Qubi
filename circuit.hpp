@@ -43,12 +43,11 @@ class Circuit {
         vector<Block> prefix;
         vector<Gate> matrix;        // gate definitions (shifted by -maxvar)
         int output;                 // output gate
-        map<string,int> vars;       // map external var/gate names to identifiers
+
         vector<string> varnames;    // map identifiers to external names, start at 1
-
+                                    // initialized by friend class Qcir_IO class
     public:
-        Circuit(string filename);
-
+        Circuit(string name);
         int maxVar();
         int maxBlock();
         int maxGate();
@@ -62,30 +61,10 @@ class Circuit {
         int getOutput();
         Circuit& setOutput(int out);
 
-        int getVar(string var);
-        Circuit& setVar(string var, int i);
-
         string& getVarOrGate(int i);
-
         void printInfo(std::ostream& s);
-        void writeQcir(std::ostream& s);
-        Circuit& readQcir(std::istream &input); // qcir file format
 
-
-    private:
-
-        // for printing:
-        void commaSeparate(std::ostream& s, vector<int>literals);
-        string litString(int literal);
-
-        // for parsing:
-        int lineno=0;
-        int getVarOrGate(string line);
-        int createVar(string line);
-        void createGate(string line);
-        int getLiteral(string);        
-        vector<int> getLiterals(string);
-        vector<int> createVariables(string line);
+        friend class Qcir_IO;
 };
 
 #endif
