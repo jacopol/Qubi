@@ -5,13 +5,53 @@
 
 using namespace std;
 
+/// Writing QCIR specification
+
+string Circuit::litString(int literal) {
+    if (literal > 0) {
+        return varnames[literal];
+    }
+    else {
+        return "-" + varnames[-literal];
+    }
+}
+
+void Circuit::commaSeparate(std::ostream& s, vector<int>literals) {
+    if (literals.size()>0) {
+        s << litString(literals[0]);
+    }
+    for (int i=1; i < literals.size(); i++) {
+        s << ", " << litString(literals[i]);
+    }
+
+}
+void Circuit::writeQcir(std::ostream& s) {
+    s << "#QCIR-G14" << endl;
+    for (int i=0; i < maxBlock() ; i++) {
+        Block b = getBlock(i);
+        s << b.getQuantifier() << "(";
+        commaSeparate(s, b.variables);
+        s << ")" << endl;
+    }
+    s << "output(" << litString(output) << ")" << endl;
+    for (int i=maxVar() ; i<maxGate(); i++) {
+        Gate g = getGate(i);
+        s << litString(i) << " = " << g.getConnective() << "(";
+        commaSeparate(s, g.inputs);
+        s << ")" << endl;
+    }
+}
+
+
+/// Reading QCIR specification
+
 const string variable("[a-zA-z0-9_]+");
 const string literal("-?" + variable);
 
 // lookup an existing variable
 // check that it exists
 int Circuit::getVarOrGate(string line) {
-    assertThrow(vars.find(line)!=vars.end(), InputUndefined(line,lineno))
+    assertThrow(vars.find(line) != vars.end(), InputUndefined(line,lineno))
     return vars[line];
 }
 
@@ -25,9 +65,9 @@ int Circuit::createVar(string line) {
 
 // create a new gate
 // check that it didn't exist
-void Circuit::createGate(string line) {
-    assertThrow(vars.find(line)==vars.end(), VarDefined(line,lineno))
-    setVar(line, maxGate());
+void Circuit::createGate(string gatename) {
+    assertThrow(vars.find(gatename) == vars.end(), VarDefined(gatename,lineno))
+    setVar(gatename, maxGate());
 }
 
 int Circuit::getLiteral(string line) {
@@ -71,25 +111,27 @@ try {
         }
         else if (contains("exists")) { // 6 characters
             line = line.substr(6,line.size());
-            addBlock({Exists, createVariables(line)});
+            addBlock(Block(Exists, createVariables(line)));
         }
         else if (contains("forall")) { // 6 characters
             line = line.substr(6,line.size());
-            addBlock({Forall, createVariables(line)});
+            addBlock(Block(Forall, createVariables(line)));
         }
         else if (contains("and")) { // 3 characters
             int pos = line.find("=");
-            createGate(line.substr(0,pos-1));
             assertThrow(pos != string::npos,ParseError(line,lineno))
-            line = line.substr(pos+5, line.size());
-            addGate({And, getLiterals(line)});
+            string prefix = line.substr(0,pos-1);            // TODO: this is too fragile (whitespace)
+            string suffix = line.substr(pos+5, line.size());
+            createGate(prefix);
+            addGate(Gate(And, getLiterals(suffix)));
         }
         else if (contains("or")) { // 2 characters
             int pos = line.find("=");
-            assertThrow(pos != string::npos, ParseError(line,lineno))
-            createGate(line.substr(0,pos-1));
-            line = line.substr(pos+4, line.size());
-            addGate({Or, getLiterals(line)});
+            assertThrow(pos != string::npos,ParseError(line,lineno))
+            string prefix = line.substr(0,pos-1);       // TODO: this is too fragile (whitespace)
+            string suffix = line.substr(pos+4, line.size());
+            createGate(prefix);
+            addGate(Gate(Or, getLiterals(suffix)));
         }
         else if (contains("output")) {
             outputline = line.substr(6,line.size());
@@ -103,8 +145,9 @@ try {
     line = outputline;
     lineno = outputlineno; // only to get correct error message
     smatch m;
-    regex_search(line, m, regex(literal));
-    setOutput(getLiteral(m[0]));
+    if (regex_search(line, m, regex(literal))) {
+        setOutput(getLiteral(m[0]));
+    }
     return *this;
 } 
 catch (InputUndefined& err) { 

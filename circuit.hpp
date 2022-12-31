@@ -14,7 +14,7 @@ enum Quantifier {Forall, Exists};
 
 class Gate {
 private:
-    const vector<string> Ctext = {"And", "Or"};
+    const vector<string> Ctext = {"and", "or"};
 public:
     vector<int> inputs;
     Connective output;
@@ -26,7 +26,7 @@ public:
 
 class Block {
 private:
-    const vector<string> Qtext = {"Forall", "Exists"};
+    const vector<string> Qtext = {"forall", "exists"};
 public:
     Quantifier quantifier;          
     vector<int> variables;
@@ -41,10 +41,10 @@ class Circuit {
         string name;                // name of this circuit
         int maxvar=1;               // next unused variable, start at 1
         vector<Block> prefix;
-        vector<Gate> matrix;        // gate definitions (shifted by maxvar!)
-        int output;                 // output gate (shifted by maxvar!)
+        vector<Gate> matrix;        // gate definitions (shifted by -maxvar)
+        int output;                 // output gate
         map<string,int> vars;       // map external var/gate names to identifiers
-        vector<string> varnames;    // map identifiers to external names (shift by -1)
+        vector<string> varnames;    // map identifiers to external names, start at 1
 
     public:
         Circuit(string filename);
@@ -53,10 +53,10 @@ class Circuit {
         int maxBlock();
         int maxGate();
 
-        Block getBlock(int i);
+        Block& getBlock(int i);
         Circuit& addBlock(Block b);
 
-        Gate getGate(int i);
+        Gate& getGate(int i);
         Circuit& addGate(Gate g);
         
         int getOutput();
@@ -65,15 +65,21 @@ class Circuit {
         int getVar(string var);
         Circuit& setVar(string var, int i);
 
-        string getVarOrGate(int i);
+        string& getVarOrGate(int i);
 
         void printInfo(std::ostream& s);
-        void printQcir(std::ostream& s, map<int,string>names);
+        void writeQcir(std::ostream& s);
         Circuit& readQcir(std::istream &input); // qcir file format
 
-// for parsing:
+
     private:
-        int lineno;
+
+        // for printing:
+        void commaSeparate(std::ostream& s, vector<int>literals);
+        string litString(int literal);
+
+        // for parsing:
+        int lineno=0;
         int getVarOrGate(string line);
         int createVar(string line);
         void createGate(string line);

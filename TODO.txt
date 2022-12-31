@@ -13,3 +13,13 @@
 
 - option for setting tablesize, workers
 - print peak BDD
+
+- make parsing less fragile for whitespace
+- make parsing survive and/or as gate names
+- test with no variables, only empty and/or gate
+
+- print BDD with indices as names + option
+- option to print BDD to file
+
+- refactor: Reading and Writing in another class (design pattern?)
+- refactor: Solver could be a separate class?

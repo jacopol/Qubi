@@ -1,13 +1,23 @@
 Usage:
 
-    ./qubi [-block | -quant] [infile]
-    ./qubi -help
+Usage:  qubi [-e] [-q | -b] [-p] [-v | -s] [infile]
+        qubi [-h]
 
-    (options can be abbreviated to -b, -q, -h)
+Input:   [infile] (DEFAULT: stdin). Input QBF problem in QCIR format
+Output:  [TRUE | FALSE] -- the solution of the QBF
+
+Options:
+  -e, -example:         show witness for outermost quantifiers.
+  -q, -quant:           transform: each quantifier is a block.
+  -b, -block:           transform: each block is maximal.
+  -p, -print:           print the (transformed) qcir to stdout.
+  -v, -verbose:         verbose, show intermediate progress.
+  -s, -silent:          show the output only.
+  -h, -help:            this usage message
 
 Test:
 
-    ./qubi Test/qbf1.qcir
+    ./qubi -p -e -v Test/qbf1.qcir
 
 Input:
 
@@ -21,6 +31,8 @@ Limitations:
 
 - currently only supports and/or gates
 - currently only supports prenex format
+- currently only accepts closed QBF (no free variables)
+- currently brittle with parsing
 
 Build:
 

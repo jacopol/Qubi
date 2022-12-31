@@ -7,6 +7,7 @@ using namespace std;
 
 bool BLOCK = true; // eliminate single quantifiers or as block
 bool EXAMPLE = false;
+bool PRINT = false;
 int VERBOSE = 1;
 
 string NAME;
@@ -16,14 +17,18 @@ int WORKERS = 4;
 long long TABLE = 1L<<28;
 
 void usage() {
-    cout << "Usage: qubi [-e] [-q | -b] [-v | -s] [-h] [infile]\n"
-         << "Input: [infile] (DEFAULT: stdin). Input QBF problem in QCIR format\n"
+    cout << "Usage:"
+         << "\tqubi [-e] [-q | -b] [-p] [-v | -s] [infile]\n"
+         << "\tqubi [-h]\n\n"
+         << "Input:\t [infile] (DEFAULT: stdin). Input QBF problem in QCIR format\n"
+         << "Output:\t Result: [TRUE | FALSE] -- the solution of the QBF\n\n"
          << "Options:\n"
          << "  -e, -example: \tshow witness for outermost quantifiers.\n"
-         << "  -q, -quant: \t\teliminate quantifiers one by one.\n"
-         << "  -b, -block: \t\teliminate quantifiers in blocks. (DEFAULT)\n"
+         << "  -q, -quant: \t\ttransform: each quantifier is a block.\n"
+         << "  -b, -block: \t\ttransform: each block is maximal.\n"
+         << "  -p, -print: \t\tprint the (transformed) qcir to stdout.\n"
          << "  -v, -verbose: \tverbose, show intermediate progress.\n"
-         << "  -s, -silent: \tshow the output only.\n"
+         << "  -s, -silent: \t\tshow the output only.\n"
          << "  -h, -help: \t\tthis usage message\n"
          << endl;
     exit(-1);
@@ -46,6 +51,8 @@ void parseArgs(int argc, char* argv[]) {
             { EXAMPLE = true; continue; }
         if (arg == "-quant" || arg == "-q")
             { BLOCK = false; continue; }
+        if (arg == "-print" || arg == "-p")
+            { PRINT = true; continue; }
         if (arg == "-block" || arg == "-b")
             { BLOCK = true; continue; }
         if (arg == "-verbose" || arg == "-v")
@@ -66,7 +73,7 @@ void parseArgs(int argc, char* argv[]) {
     if (NAME == "") {
         NAME = "stdin";
         INFILE = &cin;
-        // INFILE = &openInput("Test/sat2.qcir"); // for debugging
+        INFILE = &openInput("Test/qbf2.qcir"); // for debugging
 
     }
 }
@@ -76,8 +83,12 @@ int main(int argc, char *argv[]) {
     Circuit qcir(NAME);
     qcir.readQcir(*INFILE);
     if (VERBOSE>=1) qcir.printInfo(cerr);
-    Solver solver = Solver(WORKERS, TABLE);
-    solver.setVerbose(VERBOSE).setExample(EXAMPLE);
-    solver.solve(qcir);
+    if (PRINT) {
+        qcir.writeQcir(cout);
+    } else {
+        Solver solver = Solver(WORKERS, TABLE);
+        solver.setVerbose(VERBOSE).setExample(EXAMPLE);
+        solver.solve(qcir);
+    }
     return 0;
 }

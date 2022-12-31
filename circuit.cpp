@@ -5,7 +5,7 @@
 
 Circuit::Circuit(string filename) {
     name = filename;
-    varnames = vector<string>();
+    varnames = vector<string>({""}); // start from first position
 }
 
 int Circuit::maxVar() { 
@@ -25,7 +25,7 @@ Circuit& Circuit::addBlock(Block b) {
     return *this;
 }
 
-Block Circuit::getBlock(int i) { 
+Block& Circuit::getBlock(int i) { 
     assert(i<prefix.size());
     return prefix[i]; 
 }
@@ -35,22 +35,22 @@ Circuit& Circuit::addGate(Gate g) {
     return *this;
 }
 
-Gate Circuit::getGate(int i) {
+Gate& Circuit::getGate(int i) {
     assert(maxvar <= i && i < maxvar + matrix.size());
     return matrix[i-maxvar];
 }
 
 Circuit& Circuit::setOutput(int out) {
-    output = out + maxvar;
+    output = out;
     return *this;
 }
 
 int Circuit::getOutput() {
-    return output - maxvar;
+    return output;
 }
 
 Circuit& Circuit::setVar(string var, int i) {
-    assert(i==varnames.size()+1);
+    assert(i==varnames.size());
     vars[var] = i;
     varnames.push_back(var);
     return *this;
@@ -60,14 +60,14 @@ int Circuit::getVar(string var) {
     return vars[var];
 }
 
-string Circuit::getVarOrGate(int i) {
+string& Circuit::getVarOrGate(int i) {
     assert(i<=varnames.size());
-    return varnames[i-1];
+    return varnames[i];
 }
 
 void Circuit::printInfo(std::ostream &s) {
     s   << "Quantified Circuit \"" << name << "\" (" 
-        << maxvar << " vars in " 
+        << maxvar-1 << " vars in " 
         << prefix.size() << " blocks, "
         << matrix.size() << " gates)" 
         << std::endl;
