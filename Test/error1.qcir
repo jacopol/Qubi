@@ -1,7 +1,7 @@
 #
 forall(1)
 exists(2)
-forall(3,4)
+forall(3, 4)
 #
 output(8)
 #

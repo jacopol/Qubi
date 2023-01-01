@@ -91,7 +91,7 @@ void Solver::example(Circuit &c) {
 
         // Print valuation
         for (int i=0; i<vars.size(); i++)
-            cout << c.getVarOrGate(vars[i]) << ":" << (val[i] ? vars[i] : -vars[i]) << " ";
+            cout << c.getVarOrGate(vars[i]) << "=" << (val[i] ? "true" : "false") << " ";
         cout << endl;
     }
 }

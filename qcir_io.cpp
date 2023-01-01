@@ -88,6 +88,16 @@ int Qcir_IO::createVar(string line) {
     return c.maxvar++;
 }
 
+vector<int> Qcir_IO::createVariables(string line) {
+    vector<int> result;
+    smatch m;
+    while (regex_search(line, m, regex(variable))) {
+        result.push_back(createVar(m[0]));
+        line = m.suffix();
+    }
+    return result;
+}
+
 // create a new gate
 // check that it didn't exist
 void Qcir_IO::createGate(string gatename) {
@@ -101,16 +111,6 @@ int Qcir_IO::getLiteral(string line) {
         return getVarOrGateIdx(line);
     else 
         return -getVarOrGateIdx(line.substr(1,line.size()));
-}
-
-vector<int> Qcir_IO::createVariables(string line) {
-    vector<int> result;
-    smatch m;
-    while (regex_search(line, m, regex(variable))) {
-        result.push_back(createVar(m[0]));
-        line = m.suffix();
-    }
-    return result;
 }
 
 vector<int> Qcir_IO::getLiterals(string line) {
@@ -147,16 +147,20 @@ try {
             assertThrow(pos != string::npos,ParseError(line,lineno))
             string prefix = line.substr(0,pos-1);            // TODO: this is too fragile (whitespace)
             string suffix = line.substr(pos+5, line.size());
+            // the order of the next 3 statements is important: check, declare next, add
+            Gate g = Gate(And, getLiterals(suffix));
             createGate(prefix);
-            c.addGate(Gate(And, getLiterals(suffix)));
+            c.addGate(g);
         }
         else if (contains("or")) { // 2 characters
             int pos = line.find("=");
             assertThrow(pos != string::npos,ParseError(line,lineno))
             string prefix = line.substr(0,pos-1);       // TODO: this is too fragile (whitespace)
             string suffix = line.substr(pos+4, line.size());
+            // the order of the next 3 statements is important: check, declare next, add
+            Gate g = Gate(Or, getLiterals(suffix));
             createGate(prefix);
-            c.addGate(Gate(Or, getLiterals(suffix)));
+            c.addGate(g);
         }
         else if (contains("output")) {
             outputline = line.substr(6,line.size());

@@ -8,7 +8,6 @@ Preprocessing:
 - early quantification (non-prenex)
 - transform back to prenex
 - remove (or skip) unused gates
-- variable reordering
 
 Solving:
 - use pairwise disjunction / conjunction
@@ -25,3 +24,6 @@ Improvements:
 - refactor: Reading and Writing in another class (try decorator pattern?)
 - refactor: Solver could be an abstract class / interface
 - refactor: generalize to other BDD packages
+
+Correctness:
+- repair or refute sat7/sat8 (-e vs -e -r)
