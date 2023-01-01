@@ -9,11 +9,13 @@
 
 using namespace std;
 
-bool BLOCK = true; // eliminate single quantifiers or as block
-bool EXAMPLE = false;
-bool PRINT = false;
-bool KEEP = false;
-int VERBOSE = 1;
+bool EXAMPLE    = false;
+bool PRINT      = false;
+bool KEEP       = false;
+bool SPLIT      = false;
+bool COMBINE    = false;
+bool REORDER    = false;
+int VERBOSE     = 1;
 
 
 string NAME;
@@ -24,19 +26,21 @@ long long TABLE = 1L<<28;
 
 void usage() {
     cout << "Usage:"
-         << "\tqubi [-e] [-q | -b] [-p] [-k] [-v | -s] [infile]\n"
+         << "\tqubi [-e | -p [-k]] [-s | -c] [-r] [-v | -q | -h] [infile]\n"
          << "\tqubi [-h]\n\n"
          << "Input:\t [infile] (DEFAULT: stdin). Input QBF problem in QCIR format\n"
-         << "Output:\t Result: [TRUE | FALSE] -- the solution of the QBF\n\n"
+         << "Output:\t Result: [TRUE | FALSE] -- the solution of the QBF\n"
+         << "    or:\t the preprocessed QBF in QCIR format\n\n"
          << "Options:\n"
-         << "  -e, -example: \tshow witness for outermost quantifiers.\n"
-         << "  -q, -quant: \t\ttransform: each quantifier is a block.\n"
-         << "  -b, -block: \t\ttransform: each block is maximal.\n"
-         << "  -p, -print: \t\tprint the (transformed) qcir to stdout.\n"
-         << "  -k, -keep: \t\tkeep the original gate/var names.\n"
-         << "  -v, -verbose: \tverbose, show intermediate progress.\n"
-         << "  -s, -silent: \t\tshow the output only.\n"
-         << "  -h, -help: \t\tthis usage message\n"
+         << "\t-e, -example: \tshow witness for outermost quantifiers\n"
+         << "\t-p, -print: \tprint the (transformed) qcir to stdout\n"
+         << "\t-k, -keep: \tkeep the original gates/vars (or else: renumber)\n"
+         << "\t-s, -split: \ttransform: split blocks in single quantifier\n"
+         << "\t-c, -combine: \ttransform: combine blocks with same quantifier\n"
+         << "\t-r, -reorder: \ttransform: variable reordering based on DFS\n"
+         << "\t-v, -verbose: \tverbose, show intermediate progress\n"
+         << "\t-q, -quiet: \tshow the output only\n"
+         << "\t-h, -help: \tthis usage message\n"
          << endl;
     exit(-1);
 }
@@ -56,17 +60,19 @@ void parseArgs(int argc, char* argv[]) {
         string arg = string(argv[i]);
         if (arg == "-example" || arg == "-e")
             { EXAMPLE = true; continue; }
-        if (arg == "-quant" || arg == "-q")
-            { BLOCK = false; continue; }
-        if (arg == "-block" || arg == "-b")
-            { BLOCK = true; continue; }
+        if (arg == "-split" || arg == "-s")
+            { SPLIT = true; continue; }
+        if (arg == "-combine" || arg == "-c")
+            { COMBINE = true; continue; }
+        if (arg == "-reorder" || arg == "-r")
+            { REORDER = true; continue; }
         if (arg == "-print" || arg == "-p")
             { PRINT = true; continue; }
         if (arg == "-keep" || arg == "-k")
             { KEEP = true; continue; }
         if (arg == "-verbose" || arg == "-v")
             { VERBOSE = 2; continue; }
-        if (arg == "-silent" || arg == "-s")
+        if (arg == "-quiet" || arg == "-q")
             { VERBOSE = 0; continue; }
         if (arg == "-help" || arg == "-h")
             { usage(); }
@@ -76,6 +82,11 @@ void parseArgs(int argc, char* argv[]) {
             continue;
         }
         cerr << "Couldn't parse argument: " << argv[i] << endl;
+        usage();
+    }
+
+    if (SPLIT && COMBINE) {
+        cerr << "Split (-s) and Combine (-s) contradict each other" << endl;
         usage();
     }
 
@@ -93,6 +104,9 @@ int main(int argc, char *argv[]) {
     Qcir_IO rw(qcir,KEEP);
     rw.readQcir(*INFILE);
     if (VERBOSE>=1) qcir.printInfo(cerr);
+    if (SPLIT) qcir.split();
+    if (COMBINE) qcir.combine();
+    if (REORDER) qcir.reorder();
     if (PRINT) {
         rw.writeQcir(cout);
     } else {

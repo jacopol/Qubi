@@ -2,28 +2,29 @@
 
 ## Usage:
 
-_Input:_  QBF problem in QCIR format (file or stdin)
+_Input:_  QBF problem in QCIR format (from file or stdin)
 
-_Output:_  [TRUE | FALSE] the solution of the QBF + valuation 1st block _or:_ preprocessed QBF
+_Output:_  [TRUE | FALSE] : the solution of the QBF + (counter)example _or:_ preprocessed QBF
 
-    qubi [-e] [-q | -b] [-p] [-k] [-v | -s] [-h] [infile]
+    qubi [-e | -p [-k]] [-s | -c] [-r] [-v | -q | -h] [infile]
     
 
 
 ### Options:
 
-    -e, -example:         show witness for outermost quantifiers.
-    -q, -quant:           transform: each quantifier is a block.
-    -b, -block:           transform: each block is maximal.
-    -p, -print:           print the (transformed) qcir to stdout.
-    -k, -keep:            keep the original gate/var names.
-    -v, -verbose:         verbose, show intermediate progress.
-    -s, -silent:          show the output only.
-    -h, -help:            this usage message
+    -e, -example:   show witness for outermost quantifiers
+    -p, -print:     print the (transformed) qcir to stdout
+    -k, -keep:      keep the original gates/vars (or else: renumber)
+    -s, -split:     transform: split blocks in single quantifier
+    -c, -combine:   transform: combine blocks with same quantifier
+    -r, -reorder:   transform: variable reordering based on DFS
+    -v, -verbose:   verbose, show intermediate progress
+    -q, -quiet:     show the output only
+    -h, -help:      this usage message
 
 ## Test:
 
-    ./qubi -p -b -k Test/qbf3.qcir
+    ./qubi -p -c -k Test/qbf3.qcir
     ./qubi -e -v Test/qbf3.qcir
 
 ## Current Limitations:

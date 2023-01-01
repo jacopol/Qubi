@@ -72,18 +72,26 @@ void Solver::example(Circuit &c) {
     cout << "Example: ";
     if (matrix.isOne() || matrix.isZero()) {
         cout << "None" << endl;
-    }
-    else {
-        BddSet vars = BddSet();
-        int firstBlock = c.getBlock(0).size();
-        // QBF variables start at 1
-        for (int i=1; i<=firstBlock; i++) {
-            vars.add(i);
+    } else {
+        // compute list of all top-level variables
+        auto vars = vector<int>();
+        Quantifier q = c.getBlock(0).quantifier;
+        for (int i=0; i<c.maxBlock(); i++) {
+            Block b = c.getBlock(i);
+            if (b.quantifier != q) break; // stop at first quantifier alternation
+            for (int v : b.variables) {
+                vars.push_back(v);
+            }
         }
-        // Sylvan vector starts at 0
-        vector<bool> val = matrix.PickOneCube(vars);
-        for (int i=1; i<=firstBlock; i++)
-            cout << (val[i-1] ? i : -i) << " ";
+
+        // Let Sylvan compute a valuation
+        BddSet varSet = BddSet();
+        for (int x : vars) varSet.add(x);
+        vector<bool> val = matrix.PickOneCube(varSet);
+
+        // Print valuation
+        for (int i=0; i<vars.size(); i++)
+            cout << c.getVarOrGate(vars[i]) << ":" << (val[i] ? vars[i] : -vars[i]) << " ";
         cout << endl;
     }
 }
@@ -101,7 +109,7 @@ void Solver::matrix2bdd(Circuit &c) {
         bdds.push_back(Bdd::bddVar(i));
     }
     LOG(1,"Building BDD for Matrix" << endl;);
-    for (int i=c.maxVar(); i<c.maxGate();i++) {
+    for (int i=c.maxVar(); i<=c.getOutput();i++) {
         LOG(2,"- gate " << c.getVarOrGate(i));
         Gate g = c.getGate(i);
         bool isAnd = g.output==And;

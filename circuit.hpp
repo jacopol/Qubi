@@ -67,6 +67,14 @@ class Circuit {
         string& getVarOrGate(int i);
         void printInfo(std::ostream& s);
 
+    // Transformations
+
+        Circuit& split();   // every block gets single quantifier
+        Circuit& combine(); // blocks become strictly alternating
+        Circuit& reorder(); // reorder by DFS pass
+
+    // Delegating IO
+
         friend class Qcir_IO;
 };
 

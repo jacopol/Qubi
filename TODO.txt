@@ -7,11 +7,10 @@ Extensions Input:
 Preprocessing:
 - early quantification (non-prenex)
 - transform back to prenex
-- combine blocks
-- flatten blocks
+- remove (or skip) unused gates
+- variable reordering
 
 Solving:
-- variable reordering
 - use pairwise disjunction / conjunction
 - use parallel disjunction/conjunctions
 
@@ -21,9 +20,8 @@ Improvements:
 
 - make parsing less fragile for whitespace
 - make parsing survive and/or as gate names
-- test with no variables, only empty and/or gate
 
 - print gates and/or example with names/indices
 - refactor: Reading and Writing in another class (try decorator pattern?)
 - refactor: Solver could be an abstract class / interface
-- refactor: generealize to other BDD packages
+- refactor: generalize to other BDD packages
