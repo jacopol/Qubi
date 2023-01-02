@@ -24,15 +24,7 @@ public:
         this->line = line;
     }
     virtual string what() {
-        return "QCIR error (unexpected)";
-    }
-};
-
-class InputUndefined : public QBFexception {
-public:
-    InputUndefined(string input, int line) : QBFexception(input, line) {}
-    string what() {
-        return "Error: Input \"" + input + "\" on line " + to_string(line) + " is undefined";
+        return "Error line " + to_string(line) + ": ";
     }
 };
 
@@ -40,7 +32,23 @@ class VarDefined : public QBFexception {
 public:
     VarDefined(string input, int line): QBFexception(input, line) {}
     string what() {
-        return "Error: Variable \"" + input + "\" on line " + to_string(line) + " was already defined";
+        return QBFexception::what() + "Variable \"" + input + "\" is already defined";
+    }
+};
+
+class InputUndefined : public QBFexception {
+public:
+    InputUndefined(string input, int line) : QBFexception(input, line) {}
+    string what() {
+        return QBFexception::what() + "Literal \"" + input + "\" is undefined";
+    }
+};
+
+class ConnectiveError : public QBFexception {
+public:
+    ConnectiveError(string input, int line): QBFexception(input, line) {}
+    string what() {
+        return QBFexception::what() + "Expected a connective, but got: \"" + input + "\"";
     }
 };
 
@@ -48,15 +56,15 @@ class ParseError : public QBFexception {
 public:
     ParseError(string input, int line): QBFexception(input, line) {}
     string what() {
-        return "Error: could not parse \"" + input + "\" on line " + to_string(line);
+        return QBFexception::what() + "Expecting quantifier, connective or output, but got \"" + input + "\"";
     }
 };
 
 class OutputMissing : public QBFexception {
 public:
-    OutputMissing(): QBFexception("", -1) {}
+    OutputMissing(int line): QBFexception("", line) {}
     string what() {
-        return "Parse error: no output(...) gate specified";
+        return QBFexception::what() + "The \"output(...)\" gate is missing";
     }
 };
 

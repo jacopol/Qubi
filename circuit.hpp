@@ -12,31 +12,30 @@ using std::vector;
 using std::map;
 using std::string;
 
-enum Connective {And, Or}; // could easily add Xor, Ite
+enum Connective {And, Or};
+const vector<Connective> Connectives = {And, Or};
+const vector<string> Ctext = {"and", "or"};
+
 enum Quantifier {Forall, Exists};
+const vector<Quantifier> Quantifiers = {Forall, Exists};
+const vector<string> Qtext = {"forall", "exists"};
 
 class Gate {
-private:
-    const vector<string> Ctext = {"and", "or"};
 public:
     vector<int> inputs;
     Connective output;
     Gate(Connective c, vector<int>args) { output=c; inputs=args; }
     int operator[](int i)   { return inputs[i]; }
     int size()              { return inputs.size(); }
-    string getConnective()  { return Ctext[output]; }
 };
 
 class Block {
-private:
-    const vector<string> Qtext = {"forall", "exists"};
 public:
     Quantifier quantifier;          
     vector<int> variables;
     Block(Quantifier q, vector<int>args) { quantifier=q; variables=args; }
     int operator[](int i)   { return variables[i]; }
     int size()              { return variables.size(); }
-    string getQuantifier()  { return Qtext[quantifier]; }
 };
 
 class Circuit {

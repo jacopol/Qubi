@@ -1,6 +1,6 @@
 #QCIR-14G
-#
+
 # test: output variable (officially not allowed?)
-#
+
 forall(y, x)
 output(x)

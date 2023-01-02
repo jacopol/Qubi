@@ -1,6 +1,9 @@
 #QCIR-G14
-exists(1, 2, 3)
-output(6)
-4 = or(1, -2)
-5 = or(2, -3)
-6 = and(4, 5, -3)
+
+# test whitespace
+
+  exists   (1,   2, 3)
+output (   6 )
+  4  =  or (1    , -2 )
+5 = or(2   , - 3 )
+6    =   and  ( 4      , 5 , -3)

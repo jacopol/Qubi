@@ -1,12 +1,13 @@
 #
 forall(1)
+#
+humbug
+#
 exists(2)
 forall(3, 4)
-
-# undefined output:
-
-output(8)
 #
-5 = or(2, -3)
+output(7)
+#
+5 = or(2, -4)
 6 = or(3, -4)
 7 = and(5, 6, 4)

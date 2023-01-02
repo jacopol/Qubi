@@ -1,7 +1,7 @@
 #QCIR-14G
-#
+
 # test use unused gates (output not last)
-#
+
 forall(x, y)
 output(5)
 1 = or(x, y)

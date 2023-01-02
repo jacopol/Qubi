@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <algorithm>
 #include "solver.hpp"
 
 using std::cout;
@@ -89,9 +90,18 @@ void Solver::example(Circuit &c) {
         for (int x : vars) varSet.add(x);
         vector<bool> val = matrix.PickOneCube(varSet);
 
+        // Note: Sylvan valuation is sorted on identifiers
+        // Example: if vars = [2,7,3,8,9] then vals = [v2,v3,v7,v8,v9]
+        // we use varsorted = [2,3,7,8,9] to find the proper location
+
+        vector<int>varsorted = vars;
+        std::sort(varsorted.begin(),varsorted.end());
+
         // Print valuation
-        for (int i=0; i<vars.size(); i++)
-            cout << c.getVarOrGate(vars[i]) << "=" << (val[i] ? "true" : "false") << " ";
+        for (int i=0; i<vars.size(); i++) {
+            int loc = std::find(varsorted.begin(),varsorted.end(),vars[i]) - varsorted.begin();
+            cout << c.getVarOrGate(vars[i]) << "=" << (val[loc] ? "true" : "false") << " ";
+        }
         cout << endl;
     }
 }
@@ -140,7 +150,7 @@ void Solver::prefix2bdd(Circuit &c) {
             break;
         }
         Block b = c.getBlock(i);
-        LOG(2,"- block " << i+1 << " (" << b.size() << "x " << b.getQuantifier() << "): ");
+        LOG(2,"- block " << i+1 << " (" << b.size() << "x " << Qtext[b.quantifier] << "): ");
 
         Bdd cube = sylvan_true;        
         for (int var : b.variables) {

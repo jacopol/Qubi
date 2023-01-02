@@ -1,6 +1,6 @@
 #QCIR-14G
-#
+
 # test empty and
-#
+
 output(0)
 0 = and()

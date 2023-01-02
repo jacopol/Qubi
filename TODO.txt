@@ -1,29 +1,37 @@
 Extensions Input:
 
-- allow gates xor, ite
-- allow non-prefix qcir
-- allow free variables
+- allow gates xor, ite  (easy)
+- allow non-prefix qcir (semantics?)
+- allow free variables  (doable)
 
 Preprocessing:
+- remove (or skip) unused vars / gates (already detected)
 - early quantification (non-prenex)
 - transform back to prenex
-- remove (or skip) unused gates
 
 Solving:
-- use pairwise disjunction / conjunction
-- use parallel disjunction/conjunctions
+- use pairwise disjunction/conjunction
+- use parallel disjunction/conjunction
 
 Improvements:
+- use options with =, as in -t=27 -w=4
 - option for setting tablesize, workers
-- print peak BDD
+- statistics: timing
+- statistics: print peak BDD
 
-- make parsing less fragile for whitespace
-- make parsing survive and/or as gate names
-
-- print gates and/or example with names/indices
+Refactor:
 - refactor: Reading and Writing in another class (try decorator pattern?)
 - refactor: Solver could be an abstract class / interface
 - refactor: generalize to other BDD packages
 
-Correctness:
-- repair or refute sat7/sat8 (-e vs -e -r)
+C++ language related:
+- use inline functions? (moves code to header files)
+- avoid copying, use more references
+- add const modifiers
+
+Suggestions for Sylvan:
+- simplify initialisation (at least for non-lace use)
+- vector<bool> PickOneCube(vector<uint32_t>variables)
+- resolve Bdd vs Cube vs BddSet
+- vector<bool> vs vector<uint_8>
+- 0/1 versus 0/1/2 (don't care)

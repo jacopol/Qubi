@@ -1,7 +1,7 @@
 #QCIR-G14
-#
+
 # test with identifiers rather than numbers
-#
+
 exists(x, y, z)
 output(g4)
 g1 = and(x, -y)

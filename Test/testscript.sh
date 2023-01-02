@@ -2,7 +2,12 @@
 
 mkdir OUT
 
-for x in *.qcir; do
+for x in e*.qcir; do
+    echo $x
+    ../qubi $x
+done
+
+for x in s*.qcir q*.qcir; do
     echo $x
     ../qubi -r -p -k $x > OUT/test.qcir
     diff $x OUT/test.qcir
@@ -10,7 +15,7 @@ done
 
 # test that reordering provides the same result
 
-for x in *.qcir; do
+for x in s*.qcir q*.qcir; do
     echo $x
     ../qubi -e -q $x > OUT/test1.txt
     ../qubi -r -e -q $x > OUT/test2.txt
