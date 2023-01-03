@@ -18,20 +18,27 @@ class Qcir_IO {
 
     private:
         map<string,int> vars;       // map external var/gate names to identifiers
-        int getVarOrGateIdx(string line);
+        string outputline;          // save outputline
+        int outputlineno;           // save line number of outputline
 
         // for printing:
-        void commaSeparate(std::ostream& s, vector<int>literals);
+        void commaSeparate(std::ostream& s, const vector<int>& literals);
         string litString(int literal);
 
         // for parsing:
         int lineno=0;
-        void setVarOrGate(string var, int i);
-        int createVar(string line);
-        void createGate(string line);
-        int getLiteral(string);        
-        vector<int> getLiterals(string);
-        vector<int> createVariables(string line);
+        void setVarOrGate(const string& var, int i);
+        void createGate(const string& gate);
+        int createVar(const string& var);
+        int getVarOrGateIdx(const string& line);
+        int getLiteral(const string& literal);        
+        vector<int> getLiterals(string& line);
+        vector<int> createVariables(string& line);
+        Gate getGate(string& line);
+
+        bool readOutput(string& line);
+        bool readBlock(string& line);
+        bool readGateDef(string& line);
 
 };
 #endif

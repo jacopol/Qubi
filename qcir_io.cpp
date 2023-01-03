@@ -3,7 +3,9 @@
 
 #include <iostream>
 #include <regex>
-#include <assert.h>
+#include <cassert>
+#include <cctype>
+#include <algorithm>
 #include "qcir_io.hpp"
 #include "messages.hpp"
 
@@ -33,7 +35,7 @@ string Qcir_IO::litString(int literal) {
 }
 
 // output a vector of literals in comma-separated form
-void Qcir_IO::commaSeparate(std::ostream& s, vector<int>literals) {
+void Qcir_IO::commaSeparate(std::ostream& s, const vector<int>& literals) {
     if (literals.size()>0) {
         s << litString(literals[0]);
     }
@@ -67,34 +69,33 @@ Circuit& Qcir_IO::writeQcir(std::ostream& s) {
 const string variable("[a-zA-z0-9_]+");
 const string literal("-?" + variable);
 
-void Qcir_IO::setVarOrGate(string var, int i) {
+void Qcir_IO::setVarOrGate(const string& var, int i) {
     assert(i==c.varnames.size());
     vars[var] = i;
     c.varnames.push_back(var);
 }
 
-// lookup an existing variable
-// check that it exists
-int Qcir_IO::getVarOrGateIdx(string line) {
+// lookup an existing variable and check that it exists
+int Qcir_IO::getVarOrGateIdx(const string& line) {
     assertThrow(vars.find(line) != vars.end(), InputUndefined(line,lineno))
     return vars[line];
 }
 
 // create a new gate check that it didn't exist
-void Qcir_IO::createGate(string gatename) {
-    assertThrow(vars.find(gatename) == vars.end(), VarDefined(gatename,lineno))
-    setVarOrGate(gatename, c.maxGate());
+void Qcir_IO::createGate(const string& gate) {
+    assertThrow(vars.find(gate) == vars.end(), VarDefined(gate,lineno))
+    setVarOrGate(gate, c.maxGate());
 }
 
 // create a new variable and check that it didn't exist
-int Qcir_IO::createVar(string line) {
-    assertThrow(vars.find(line)==vars.end(), VarDefined(line,lineno))
-    setVarOrGate(line, c.maxvar);
+int Qcir_IO::createVar(const string& var) {
+    assertThrow(vars.find(var)==vars.end(), VarDefined(var,lineno))
+    setVarOrGate(var, c.maxvar);
     return c.maxvar++;
 }
 
 // Note: currently, we allow any separators, not just ','
-vector<int> Qcir_IO::createVariables(string line) {
+vector<int> Qcir_IO::createVariables(string &line) {
     vector<int> result;
     smatch m;
     while (regex_search(line, m, regex(variable))) {
@@ -104,7 +105,7 @@ vector<int> Qcir_IO::createVariables(string line) {
     return result;
 }
 
-int Qcir_IO::getLiteral(string line) {
+int Qcir_IO::getLiteral(const string& line) {
     assertThrow(line.size()>0, InputUndefined(line, lineno));
     if (line[0] != '-') 
         return getVarOrGateIdx(line);
@@ -113,7 +114,7 @@ int Qcir_IO::getLiteral(string line) {
 }
 
 // Note: currently, we allow any separators, not just ','
-vector<int> Qcir_IO::getLiterals(string line) {
+vector<int> Qcir_IO::getLiterals(string& line) {
     vector<int> result;
     smatch m;
     while (regex_search(line, m, regex(literal))) {
@@ -123,70 +124,102 @@ vector<int> Qcir_IO::getLiterals(string line) {
     return result;
 }
 
+// check if line starts with keyword and remove it
+// assume that kewyord is in lowercase
+// the match should be case-insensitive
+bool find_keyword(string& line, const string& keyword) {
+    if (keyword.size() > line.size())
+        return false;
+    for (int pos=0; pos<keyword.size(); pos++) {
+    if (tolower(line[pos]) != keyword[pos])
+        return false;
+    }
+    line.erase(0,keyword.size());
+    return true;
+}
+
+// Check and match line as "connective(lit1,...,litn)"
+Gate Qcir_IO::getGate(string& line) {
+    Connective connective;
+    for (Connective q : Connectives) {
+        string ctext = Ctext[q];
+        if (find_keyword(line, ctext)) {
+            return Gate(q, getLiterals(line));
+        }
+    }
+    // the line didn't match
+    assertThrow(false, ConnectiveError(line, lineno));
+}
+
+// Process block declaration "quantifier(var1,...,varn)"
+bool Qcir_IO::readBlock(string& line) {
+    for (Quantifier q : Quantifiers) {
+        string qtext = Qtext[q];
+        if (find_keyword(line, qtext)) {
+            c.addBlock(Block(q, createVariables(line)));
+            return true; // skip other quantifiers
+        }
+    }
+    return false;
+}
+
+// Process gate definition "gatename = connective(lit1,...,litn)"
+bool Qcir_IO::readGateDef(string& line) {
+    int pos = line.find("=");
+    if (pos == string::npos) return false;
+    string gatename = line.substr(0, pos);
+    line.erase(0, pos+1);
+    // Note: 
+    // - we need to check the gate before creating the gate name
+    // - we need to add the gate after creating the gate name
+    Gate g = getGate(line);
+    createGate(gatename);
+    c.addGate(g);
+    return true;
+}
+
+// Recognize output definition "output(literal)"
+// save the output line for later processing
+bool Qcir_IO::readOutput(string& line) {
+    if (find_keyword(line, "output")) {
+        outputline = line;
+        outputlineno = lineno;
+        return true;
+    }
+    else return false;
+}
+
+void removeWhiteSpace(string& line) {
+    auto p2 = line.begin();
+    for (auto p1=line.begin(); p1 != line.end(); p1++) {
+        if (*p1 == ' ' or *p1 == '\t') continue;   // skip white space
+        if (*p1 == '#') break;                     // skip comments until end of line
+        *p2++ = *p1;                               // copy normal input
+    }
+    line.erase(p2, line.end());
+}
+
 Circuit& Qcir_IO::readQcir(istream &input) {
     string line;
-    string outputline;
-    int outputlineno;
-    const auto contains = [&line](string s)->bool 
-        { return line.find(s) != string::npos; };
 try {
     while (getline(input, line)) {
         lineno++;
         
         // remove spaces
-        line.erase(remove(line.begin(), line.end(), ' '), line.end());
+        removeWhiteSpace(line);
 
         // ignore empty lines and comments
         if (line.size() == 0 || line[0] == '#') {
             continue; // next line
         }
 
-        // save output line for later processing
-        const string OUTPUT = "output";
-        if (line.find(OUTPUT)==0) {
-            outputline = line.erase(0, OUTPUT.size());
-            outputlineno = lineno;
-            continue; // next line
-        }
+        if (readBlock(line)) continue;
+        if (readOutput(line)) continue;
+        if (readGateDef(line)) continue;
 
-        // process quantifier block
-        bool foundQ = false;
-        for (Quantifier q : Quantifiers) {
-            string qtext = Qtext[q];
-            if (line.find(qtext)==0) {
-                foundQ = true;
-                line.erase(0, qtext.size());
-                c.addBlock(Block(q, createVariables(line)));
-                break; // skip other quantifiers
-            }
-        }
-        if (foundQ) continue; // next line
-
-        // Process gate definition "var = connective(lit1,...,litn)"
-        int pos = line.find("=");
-        assertThrow(pos != string::npos, ParseError(line, lineno));
-        string gatename = line.substr(0, pos);
-        line.erase(0, pos+1);
-
-        // now line should contain connective(lit1,...,litn)
-        Connective connective;
-        bool foundC = false;
-        for (Connective q : Connectives) {
-            string ctext = Ctext[q];
-
-            if (line.find(ctext)==0) {
-                foundC = true;
-                line.erase(0, ctext.length());
-                connective = q;
-            }
-        }
-        assertThrow(foundC, ConnectiveError(line, lineno));
-        Gate g = Gate(connective, getLiterals(line));
-        createGate(gatename);
-        c.addGate(g);
-        // continue next line
+        // line could not be parsed
+        assertThrow(false, ParseError(line, lineno));
     }
-
     // Finally, process the postponed output-line
     assertThrow(outputline != "", OutputMissing(lineno));
     line = outputline;

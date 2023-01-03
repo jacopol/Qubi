@@ -43,14 +43,14 @@ Solver::~Solver() {
     // cerr << "Closed Sylvan BDDs" << endl;
 }
 
-void Solver::solve(Circuit &c) {
+void Solver::solve(const Circuit &c) {
     matrix2bdd(c);
     prefix2bdd(c);
     result(c);
     if (witness) example(c);
 }
 
-void Solver::result(Circuit &c) {
+void Solver::result(const Circuit &c) {
     // Here we assume that all variables except for 
     // the first (outermost) block have been eliminated
     cout << "Result: ";
@@ -67,7 +67,7 @@ void Solver::result(Circuit &c) {
     }
 }
 
-void Solver::example(Circuit &c) {
+void Solver::example(const Circuit &c) {
     // Here we assume that all variables except for 
     // the first (outermost) block have been eliminated
     cout << "Example: ";
@@ -106,7 +106,7 @@ void Solver::example(Circuit &c) {
     }
 }
 
-void Solver::matrix2bdd(Circuit &c) {
+void Solver::matrix2bdd(const Circuit &c) {
     vector<Bdd> bdds;                    // lookup table previous BDDs
     bdds.push_back(sylvan_true);         // unused entry 0
     auto toBdd = [&bdds](int i)-> Bdd {  // negate (if necessary) and look up Bdd
@@ -119,7 +119,7 @@ void Solver::matrix2bdd(Circuit &c) {
         bdds.push_back(Bdd::bddVar(i));
     }
     LOG(1,"Building BDD for Matrix" << endl;);
-    for (int i=c.maxVar(); i<=c.getOutput();i++) {
+    for (int i=c.maxVar(); i<=abs(c.getOutput());i++) {
         LOG(2,"- gate " << c.getVarOrGate(i));
         Gate g = c.getGate(i);
         bool isAnd = g.output==And;
@@ -140,7 +140,7 @@ void Solver::matrix2bdd(Circuit &c) {
 }
 
 // override
-void Solver::prefix2bdd(Circuit &c) {
+void Solver::prefix2bdd(const Circuit &c) {
     LOG(1,"Quantifying Prefix" << endl);
 
     // Quantify blocks from last to second, unless fully resolved

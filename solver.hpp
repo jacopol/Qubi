@@ -19,17 +19,17 @@ class Solver {
         // - then call prefix2bdd             (eliminates prefix except first block)
         // - finally call result / example    (prints verdict and counter-example)
         
-        void matrix2bdd(Circuit &);
-        void prefix2bdd(Circuit &);
-        void result(Circuit &);
-        void example(Circuit &);
+        void matrix2bdd(const Circuit&);
+        void prefix2bdd(const Circuit&);
+        void result(const Circuit&);
+        void example(const Circuit&);
 
     public:
         Solver(int workers, long long maxnodes);
         Solver& setExample(bool example);
         Solver& setVerbose(int verbosity);
         ~Solver();
-        void solve(Circuit &);
+        void solve(const Circuit &);
 };
 
 #endif // SYLVANBDD_H

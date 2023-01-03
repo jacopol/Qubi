@@ -1,0 +1,12 @@
+#QCIR-14G
+
+# test: case insensitive keywords
+
+EXISTS(x)
+Forall(y)
+exists(z)
+output(-4)
+1 = and(-x,-y)
+2 = AND(x,z)
+3 = And(y,-z)
+4 = Or(1,2,3)

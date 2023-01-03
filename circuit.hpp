@@ -6,36 +6,38 @@
 
 #include <vector>
 #include <map>
+#include <array>
 #include <string>
 
 using std::vector;
 using std::map;
+using std::array;
 using std::string;
 
 enum Connective {And, Or};
-const vector<Connective> Connectives = {And, Or};
-const vector<string> Ctext = {"and", "or"};
+constexpr array<Connective,2> Connectives = {And, Or};
+const array<string,2> Ctext = {"and", "or"};
 
 enum Quantifier {Forall, Exists};
-const vector<Quantifier> Quantifiers = {Forall, Exists};
-const vector<string> Qtext = {"forall", "exists"};
+constexpr array<Quantifier,2> Quantifiers = {Forall, Exists};
+const array<string,2> Qtext = {"forall", "exists"};
 
 class Gate {
 public:
     vector<int> inputs;
     Connective output;
-    Gate(Connective c, vector<int>args) { output=c; inputs=args; }
-    int operator[](int i)   { return inputs[i]; }
-    int size()              { return inputs.size(); }
+    Gate(Connective c, const vector<int>& args) : inputs(args), output(c) { }
+    int operator[](int i) const  { return inputs[i]; }
+    int size() const             { return inputs.size(); }
 };
 
 class Block {
 public:
     Quantifier quantifier;          
     vector<int> variables;
-    Block(Quantifier q, vector<int>args) { quantifier=q; variables=args; }
-    int operator[](int i)   { return variables[i]; }
-    int size()              { return variables.size(); }
+    Block(Quantifier q, const vector<int>& args) : variables(args), quantifier(q) { }
+    int operator[](int i) const { return variables[i]; }
+    int size() const            { return variables.size(); }
 };
 
 class Circuit {
@@ -50,21 +52,21 @@ class Circuit {
                                     // initialized by friend class Qcir_IO class
     public:
         Circuit(string name);
-        int maxVar();
-        int maxBlock();
-        int maxGate();
+        int maxVar() const;
+        int maxBlock() const;
+        int maxGate() const;
 
-        Block& getBlock(int i);
-        Circuit& addBlock(Block b);
+        const Block& getBlock(int i) const;
+        Circuit& addBlock(const Block& b);
 
-        Gate& getGate(int i);
-        Circuit& addGate(Gate g);
+        const Gate& getGate(int i) const;
+        Circuit& addGate(const Gate& g);
         
-        int getOutput();
+        int getOutput() const;
         Circuit& setOutput(int out);
 
-        string& getVarOrGate(int i);
-        void printInfo(std::ostream& s);
+        const string& getVarOrGate(int i) const;
+        void printInfo(std::ostream& s) const;
 
     // Transformations
 

@@ -32,7 +32,7 @@ _Output:_  [TRUE | FALSE] : the solution of the QBF + (counter)example _or:_ pre
 - currently only supports and/or gates
 - currently only supports prenex format
 - currently only accepts closed QBF (no free variables)
-- currently brittle with parsing
+- Note: Qubi is slightly more liberal than QCIR
 
 ## Build:
 

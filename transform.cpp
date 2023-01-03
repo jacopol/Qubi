@@ -53,7 +53,7 @@ Circuit& Circuit::reorder() {
     // - remove vars/gates from allvars
     // - add vars->next to permutation
 
-    auto todo = vector<int>({getOutput()});
+    auto todo = vector<int>({abs(getOutput())});
     while (todo.size()!=0) {
         int v = todo.back();
         todo.pop_back();
@@ -106,8 +106,12 @@ Circuit& Circuit::reorder() {
         varnames[i] = newnames[i];
 
     // ...to output
-    if (output<maxVar()) 
-        output = permutation[output];
+    if (abs(output)<maxVar()) {
+        if (output > 0)
+            output = permutation[output];
+        else
+            output = -permutation[-output];
+    }
 
     return *this;
 }

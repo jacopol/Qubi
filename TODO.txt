@@ -1,5 +1,4 @@
 Extensions Input:
-
 - allow gates xor, ite  (easy)
 - allow non-prefix qcir (semantics?)
 - allow free variables  (doable)
@@ -20,18 +19,18 @@ Improvements:
 - statistics: print peak BDD
 
 Refactor:
-- refactor: Reading and Writing in another class (try decorator pattern?)
+- refactor: Reading and Writing as subclass of Circuit
 - refactor: Solver could be an abstract class / interface
-- refactor: generalize to other BDD packages
+- refactor: Make general BDD interface, where Sylvan is one implementation
 
 C++ language related:
-- use inline functions? (moves code to header files)
-- avoid copying, use more references
-- add const modifiers
+- use inline functions? (but moves code to header files)
 
 Suggestions for Sylvan:
 - simplify initialisation (at least for non-lace use)
-- vector<bool> PickOneCube(vector<uint32_t>variables)
+- vector<bool> PickOneCube(vector<uint32_t>variables) 
+- map<int,bool> PickOneCube(BDDset variables)
+
 - resolve Bdd vs Cube vs BddSet
 - vector<bool> vs vector<uint_8>
-- 0/1 versus 0/1/2 (don't care)
+- bool 0,1 versus enum {0,1,2} (don't care values)

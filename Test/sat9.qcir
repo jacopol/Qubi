@@ -1,0 +1,7 @@
+#QCIR-14G
+
+# test: negative output
+
+exists(x)
+output(-1)
+1 = and(-x)
