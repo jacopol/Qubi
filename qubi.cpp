@@ -6,17 +6,15 @@
 #include "circuit.hpp"
 #include "qcir_io.hpp"
 #include "solver.hpp"
+#include "settings.hpp"
 
 using namespace std;
 
 bool EXAMPLE    = false;
 bool PRINT      = false;
-bool KEEP       = false;
 bool SPLIT      = false;
 bool COMBINE    = false;
 bool REORDER    = false;
-int VERBOSE     = 1;
-
 
 string NAME;
 istream* INFILE;
@@ -69,7 +67,7 @@ void parseArgs(int argc, char* argv[]) {
         if (arg == "-print" || arg == "-p")
             { PRINT = true; continue; }
         if (arg == "-keep" || arg == "-k")
-            { KEEP = true; continue; }
+            { KEEPNAMES = true; continue; }
         if (arg == "-verbose" || arg == "-v")
             { VERBOSE = 2; continue; }
         if (arg == "-quiet" || arg == "-q")
@@ -100,7 +98,7 @@ void parseArgs(int argc, char* argv[]) {
 int main(int argc, char *argv[]) {
     parseArgs(argc, argv);
     Circuit qcir(NAME); 
-    Qcir_IO rw(qcir,KEEP);
+    Qcir_IO rw(qcir);
     rw.readQcir(*INFILE);
     if (VERBOSE>=1) qcir.printInfo(cerr);
     if (SPLIT) qcir.split();
@@ -110,7 +108,7 @@ int main(int argc, char *argv[]) {
         rw.writeQcir(cout);
     } else {
         Solver solver = Solver(WORKERS, TABLE);
-        solver.setVerbose(VERBOSE).setExample(EXAMPLE);
+        solver.setExample(EXAMPLE);
         solver.solve(qcir);
     }
     return 0;

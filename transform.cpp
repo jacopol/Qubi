@@ -5,9 +5,10 @@
 #include "vector"
 #include "assert.h"
 #include "circuit.hpp"
-
+#include "settings.hpp"
 
 Circuit& Circuit::split() {
+    LOG(1, "Splitting Quantifiers" << std::endl)
     vector<Block> oldprefix = prefix;
     prefix = vector<Block>();
     for (Block b : oldprefix) {
@@ -19,6 +20,7 @@ Circuit& Circuit::split() {
 }
 
 Circuit& Circuit::combine() {
+    LOG(1, "Combining Quantifiers" << std::endl)
     if (maxBlock() == 0) {
         return *this;
     } else {
@@ -43,6 +45,7 @@ Circuit& Circuit::combine() {
 
 #include <iostream>
 Circuit& Circuit::reorder() {
+    LOG(1, "Reordering Variables" << std::endl)
     int next=1;                                        // next variable index to use
     auto permutation = std::vector<int>(maxVar(),0);   // no indices are assigned yet
     auto allvars = std::set<int>(); 
@@ -71,13 +74,13 @@ Circuit& Circuit::reorder() {
 
     // Add unused variables to the 
 
-    std::cerr << "Unused variables/gates: ";
+    LOG(2,"Unused variables/gates: ");
     for (int x : allvars) {
-        std::cerr << getVarOrGate(x) << ", "; // one , too much
+        LOG(2, getVarOrGate(x) << ", "); // one , too much
         if (x<maxVar()) 
             permutation[x] = next++;
     }
-    std::cerr << std::endl;
+    LOG(2, std::endl);
     assert(next == maxVar());
 
     // Apply the permutation ...

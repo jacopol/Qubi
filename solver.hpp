@@ -12,7 +12,6 @@ class Solver {
     protected:
         sylvan::Bdd matrix; // keeps current state of algorithm
         bool witness;       // example requested?
-        int verbose;        // level of verbosity
 
         // Protocol:
         // - call matrix2bdd                  (defines the Bdd matrix)
@@ -27,7 +26,6 @@ class Solver {
     public:
         Solver(int workers, long long maxnodes);
         Solver& setExample(bool example);
-        Solver& setVerbose(int verbosity);
         ~Solver();
         void solve(const Circuit &);
 };

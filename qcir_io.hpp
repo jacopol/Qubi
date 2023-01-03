@@ -9,10 +9,9 @@
 class Qcir_IO {
     private:
         Circuit &c ; // wrapped circuit to read/write
-        bool keep;   // keep original names or new ids
 
     public:
-        Qcir_IO(Circuit &, bool keep_names);    // initialize with an (empty) circuit
+        Qcir_IO(Circuit &);                     // initialize with an (empty) circuit
         Circuit& readQcir(std::istream &input); // read from qcir file format
         Circuit& writeQcir(std::ostream& s);    // write to qcir file format
 

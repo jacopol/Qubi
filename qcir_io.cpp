@@ -8,22 +8,22 @@
 #include <algorithm>
 #include "qcir_io.hpp"
 #include "messages.hpp"
+#include "settings.hpp"
 
 using namespace std;
 
 // Initialisation: this wraps around an (empty) Circuit reference
 // lifetime of the circuit should survive qcir_io
 
-Qcir_IO::Qcir_IO(Circuit& circuit, bool keep_names) : c(circuit) {   
+Qcir_IO::Qcir_IO(Circuit& circuit) : c(circuit) {   
     c.varnames = vector<string>({""}); // start from 1st position
-    keep = keep_names;
 }
 
 /*** Writing QCIR specification ***/
 
 // convert a literal to a string
 string Qcir_IO::litString(int literal) {
-    if (!keep) {
+    if (!KEEPNAMES) {
         return to_string(literal);
     } else {
         if (literal > 0) {

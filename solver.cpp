@@ -5,14 +5,13 @@
 #include <vector>
 #include <algorithm>
 #include "solver.hpp"
+#include "settings.hpp"
 
 using std::cout;
 using std::cerr;
 using std::endl;
 
 using namespace sylvan;
-
-#define LOG(level, msg) { if (level<=verbose) {cerr << msg; }}
 
 Solver::Solver(int workers, long long maxnodes) {
     lace_start(workers, 0); // deque_size 0
@@ -29,12 +28,6 @@ Solver& Solver::setExample(bool example) {
     witness = example;
     return *this;
 }
-
-Solver& Solver::setVerbose(int verbosity) {
-    verbose = verbosity;
-    return *this;
-}
-
 
 Solver::~Solver() {
     sylvan_stats_report(stdout); // if SYLVAN_STATS is set
