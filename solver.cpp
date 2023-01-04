@@ -13,7 +13,8 @@ using std::endl;
 
 using namespace sylvan;
 
-Solver::Solver(int workers, long long maxnodes) {
+Solver::Solver(int workers, long long maxnodes, const Circuit& circuit) : c(circuit) {
+    LOG(2, "Opening Sylvan BDDs" << endl);
     lace_start(workers, 0); // deque_size 0
     long long initnodes = maxnodes >> 8;
     long long maxcache = maxnodes >> 4;
@@ -21,51 +22,39 @@ Solver::Solver(int workers, long long maxnodes) {
     sylvan_set_sizes(initnodes, maxnodes, initcache, maxcache);
     sylvan_init_package();
     sylvan_init_bdd();
-    // cerr << "Opening Sylvan BDDs" << endl;
-}
-
-Solver& Solver::setExample(bool example) {
-    witness = example;
-    return *this;
 }
 
 Solver::~Solver() {
-    sylvan_stats_report(stdout); // if SYLVAN_STATS is set
+    sylvan_stats_report(stdout); // requires SYLVAN_STATS=on during Sylvan compilation
     sylvan_quit();
     lace_stop();
-    // cerr << "Closed Sylvan BDDs" << endl;
+    LOG(2, "Closed Sylvan BDDs" << endl);
 }
 
-void Solver::solve(const Circuit &c) {
-    matrix2bdd(c);
-    prefix2bdd(c);
-    result(c);
-    if (witness) example(c);
+bool Solver::solve() {
+    matrix2bdd();
+    prefix2bdd();
+    return verdict();
 }
 
-void Solver::result(const Circuit &c) {
-    // Here we assume that all variables except for 
-    // the first (outermost) block have been eliminated
-    cout << "Result: ";
-    if (matrix == sylvan_true)
-        cout << "TRUE" << endl;
-    else if (matrix == sylvan_false) 
-        cout << "FALSE" << endl;
-    else {
-        Quantifier q = c.getBlock(0).quantifier;
-        if (q==Forall)
-            cout << "FALSE" << endl;
-        else
-            cout << "TRUE" << endl;
+// Here we assume that either the matrix is a leaf, or all variables 
+// except for the first (outermost) block have been eliminated
+bool Solver::verdict() const {
+    if (matrix.isConstant()) {
+        return matrix == sylvan_true;
+    }
+    else { // there must be at least one variable
+        return (c.getBlock(0).quantifier == Exists);
     }
 }
 
-void Solver::example(const Circuit &c) {
-    // Here we assume that all variables except for 
-    // the first (outermost) block have been eliminated
-    cout << "Example: ";
-    if (matrix.isOne() || matrix.isZero()) {
-        cout << "None" << endl;
+// Here we assume that either the matrix is a leaf, or all variables 
+// except for the first (outermost) block have been eliminated
+Valuation& Solver::example() const {
+    Valuation*valuation = new Valuation(); // empty
+    if (c.maxBlock() == 0 ||
+        verdict() != (c.getBlock(0).quantifier == Exists)) {
+        return *valuation; // no example possible
     } else {
         // compute list of all top-level variables
         auto vars = vector<int>();
@@ -73,7 +62,7 @@ void Solver::example(const Circuit &c) {
         for (int i=0; i<c.maxBlock(); i++) {
             Block b = c.getBlock(i);
             if (b.quantifier != q) break; // stop at first quantifier alternation
-            for (int v : b.variables) {
+            for (int v : b.variables) {   // else: add all variables from this block
                 vars.push_back(v);
             }
         }
@@ -81,7 +70,11 @@ void Solver::example(const Circuit &c) {
         // Let Sylvan compute a valuation
         BddSet varSet = BddSet();
         for (int x : vars) varSet.add(x);
-        vector<bool> val = matrix.PickOneCube(varSet);
+        vector<bool> val;
+        if (q==Exists)
+            val = matrix.PickOneCube(varSet);
+        else
+            val = (!matrix).PickOneCube(varSet);
 
         // Note: Sylvan valuation is sorted on identifiers
         // Example: if vars = [2,7,3,8,9] then vals = [v2,v3,v7,v8,v9]
@@ -90,16 +83,16 @@ void Solver::example(const Circuit &c) {
         vector<int>varsorted = vars;
         std::sort(varsorted.begin(),varsorted.end());
 
-        // Print valuation
+        // TODO: should be possible in O(n log n)
         for (int i=0; i<vars.size(); i++) {
             int loc = std::find(varsorted.begin(),varsorted.end(),vars[i]) - varsorted.begin();
-            cout << c.getVarOrGate(vars[i]) << "=" << (val[loc] ? "true" : "false") << " ";
+            (*valuation).push_back(pair<int,bool>(vars[i], val[loc]));
         }
-        cout << endl;
+        return *valuation;
     }
 }
 
-void Solver::matrix2bdd(const Circuit &c) {
+void Solver::matrix2bdd() {
     vector<Bdd> bdds;                    // lookup table previous BDDs
     bdds.push_back(sylvan_true);         // unused entry 0
     auto toBdd = [&bdds](int i)-> Bdd {  // negate (if necessary) and look up Bdd
@@ -132,14 +125,13 @@ void Solver::matrix2bdd(const Circuit &c) {
     matrix = toBdd(c.getOutput()); // final result
 }
 
-// override
-void Solver::prefix2bdd(const Circuit &c) {
+void Solver::prefix2bdd() {
     LOG(1,"Quantifying Prefix" << endl);
 
     // Quantify blocks from last to second, unless fully resolved
     for (int i=c.maxBlock()-1; i>0; i--) {
         if (matrix == sylvan_true || matrix == sylvan_false) {
-            LOG(1, "  (early termination)" << endl);
+            LOG(2, "  (early termination)" << endl);
             break;
         }
         Block b = c.getBlock(i);

@@ -13,6 +13,7 @@ using std::vector;
 using std::map;
 using std::array;
 using std::string;
+using std::pair;
 
 enum Connective {And, Or};
 constexpr array<Connective,2> Connectives = {And, Or};
@@ -21,6 +22,8 @@ const array<string,2> Ctext = {"and", "or"};
 enum Quantifier {Forall, Exists};
 constexpr array<Quantifier,2> Quantifiers = {Forall, Exists};
 const array<string,2> Qtext = {"forall", "exists"};
+
+typedef vector<pair<int,bool>> Valuation; // ordered list of pairs var->bool
 
 class Gate {
 public:
@@ -57,13 +60,13 @@ class Circuit {
         int maxGate() const;
 
         const Block& getBlock(int i) const;
-        Circuit& addBlock(const Block& b);
+        void addBlock(const Block& b);
 
         const Gate& getGate(int i) const;
-        Circuit& addGate(const Gate& g);
+        void addGate(const Gate& g);
         
         int getOutput() const;
-        Circuit& setOutput(int out);
+        void setOutput(int out);
 
         const string& getVarOrGate(int i) const;
         void printInfo(std::ostream& s) const;

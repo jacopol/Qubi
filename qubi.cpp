@@ -95,6 +95,18 @@ void parseArgs(int argc, char* argv[]) {
     }
 }
 
+void report_result(const Qcir_IO& qcir, bool verdict, const Valuation& valuation) {
+    cout << "Result: " << (verdict ? "TRUE" : "FALSE") << endl;
+    if (EXAMPLE) {
+        if (valuation.size() == 0)
+            cout << "No example" << endl;
+        else {
+            cout << "Example: ";
+            qcir.writeVal(cout, valuation);
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
     parseArgs(argc, argv);
     Circuit qcir(NAME); 
@@ -107,9 +119,14 @@ int main(int argc, char *argv[]) {
     if (PRINT) {
         rw.writeQcir(cout);
     } else {
-        Solver solver = Solver(WORKERS, TABLE);
-        solver.setExample(EXAMPLE);
-        solver.solve(qcir);
+        bool verdict;
+        Valuation valuation;
+        {
+            Solver solver = Solver(WORKERS, TABLE, qcir);
+            verdict = solver.solve();
+            if (EXAMPLE) valuation = solver.example();
+        }
+        report_result(rw, verdict, valuation);
     }
     return 0;
 }

@@ -22,20 +22,20 @@ Qcir_IO::Qcir_IO(Circuit& circuit) : c(circuit) {
 /*** Writing QCIR specification ***/
 
 // convert a literal to a string
-string Qcir_IO::litString(int literal) {
+string Qcir_IO::litString(int literal) const {
     if (!KEEPNAMES) {
         return to_string(literal);
     } else {
         if (literal > 0) {
-            return c.varnames[literal];
+            return c.getVarOrGate(literal);
         } else {
-            return "-" + c.varnames[-literal];
+            return "-" + c.getVarOrGate(-literal);
         }
     }
 }
 
 // output a vector of literals in comma-separated form
-void Qcir_IO::commaSeparate(std::ostream& s, const vector<int>& literals) {
+void Qcir_IO::commaSeparate(std::ostream& s, const vector<int>& literals) const {
     if (literals.size()>0) {
         s << litString(literals[0]);
     }
@@ -45,7 +45,7 @@ void Qcir_IO::commaSeparate(std::ostream& s, const vector<int>& literals) {
 }
 
 // write a QCIR specification to output
-Circuit& Qcir_IO::writeQcir(std::ostream& s) {
+void Qcir_IO::writeQcir(std::ostream& s) const {
     s << "#QCIR-G14" << endl;
     for (int i=0; i < c.maxBlock() ; i++) {
         Block b = c.getBlock(i);
@@ -60,11 +60,19 @@ Circuit& Qcir_IO::writeQcir(std::ostream& s) {
         commaSeparate(s, g.inputs);
         s << ")" << endl;
     }
-    return c;
 }
 
+/*** Writing a Valuation ***/
 
-/// Reading QCIR specification
+void Qcir_IO::writeVal(std::ostream& s, const Valuation& val) const {
+    for (pair<int,bool> v : val) {
+    s << c.getVarOrGate(v.first) << "=" 
+      << (v.second ? "true " : "false ");
+    }
+    cout << endl;
+}
+
+/*** Reading QCIR specification ***/
 
 const string variable("[a-zA-z0-9_]+");
 const string literal("-?" + variable);
@@ -76,9 +84,9 @@ void Qcir_IO::setVarOrGate(const string& var, int i) {
 }
 
 // lookup an existing variable and check that it exists
-int Qcir_IO::getVarOrGateIdx(const string& line) {
+int Qcir_IO::getVarOrGateIdx(const string& line) const {
     assertThrow(vars.find(line) != vars.end(), InputUndefined(line,lineno))
-    return vars[line];
+    return vars.at(line);
 }
 
 // create a new gate check that it didn't exist
@@ -105,7 +113,7 @@ vector<int> Qcir_IO::createVariables(string &line) {
     return result;
 }
 
-int Qcir_IO::getLiteral(const string& line) {
+int Qcir_IO::getLiteral(const string& line) const {
     assertThrow(line.size()>0, InputUndefined(line, lineno));
     if (line[0] != '-') 
         return getVarOrGateIdx(line);
@@ -114,7 +122,7 @@ int Qcir_IO::getLiteral(const string& line) {
 }
 
 // Note: currently, we allow any separators, not just ','
-vector<int> Qcir_IO::getLiterals(string& line) {
+vector<int> Qcir_IO::getLiterals(string& line) const {
     vector<int> result;
     smatch m;
     while (regex_search(line, m, regex(literal))) {
@@ -139,7 +147,7 @@ bool find_keyword(string& line, const string& keyword) {
 }
 
 // Check and match line as "connective(lit1,...,litn)"
-Gate Qcir_IO::getGate(string& line) {
+Gate Qcir_IO::getGate(string& line) const {
     Connective connective;
     for (Connective q : Connectives) {
         string ctext = Ctext[q];
@@ -199,7 +207,7 @@ void removeWhiteSpace(string& line) {
     line.erase(p2, line.end());
 }
 
-Circuit& Qcir_IO::readQcir(istream &input) {
+void Qcir_IO::readQcir(istream &input) {
     string line;
 try {
     while (getline(input, line)) {
@@ -228,7 +236,6 @@ try {
     if (regex_search(line, m, regex(literal))) {
         c.setOutput(getLiteral(m[0]));
     }
-    return c;
 } 
 catch (InputUndefined& err) { 
     cout << err.what() << endl; 
