@@ -1,17 +1,18 @@
 // (c) Jaco van de Pol
 // Aarhus University
 
-#ifndef SYLVANBDD_H
-#define SYLVANBDD_H
+#ifndef SOLVER_H
+#define SOLVER_H
 
 #include <sylvan.h>
 #include <sylvan_obj.hpp>
+#include "bdd_wrapper.hpp"
 #include "circuit.hpp"
 
 class Solver {
     private:
         const Circuit& c;   // the circuit to solve
-        sylvan::Bdd matrix; // keeps current state of algorithm
+        sylvan::Bdd *matrix; // keeps current state of algorithm
 
         // The following functions must be called in this order:
         void matrix2bdd();  // transform all gates up to output to BDD 
@@ -19,10 +20,10 @@ class Solver {
         bool verdict() const;
 
     public:
-        Solver(int workers, long long maxnodes, const Circuit &);
+        Solver(const Circuit& circuit, const BDD_wrapper& bdd);
         ~Solver();
         bool solve();
         Valuation& example() const; // can only be called after solve()
 };
 
-#endif // SYLVANBDD_H
+#endif // SOLVER_H

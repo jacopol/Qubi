@@ -1,4 +1,4 @@
 #include "settings.hpp"
 
-int  VERBOSE    = 1;
+int  VERBOSE    = DEFAULT_VERBOSE;
 bool KEEPNAMES  = false;

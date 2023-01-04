@@ -11,25 +11,13 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
+Solver::Solver(const Circuit& circuit, const BDD_wrapper& bdd) : c(circuit), matrix(new sylvan::Bdd) { }
+
+Solver::~Solver() { 
+    delete matrix;
+}
+
 using namespace sylvan;
-
-Solver::Solver(int workers, long long maxnodes, const Circuit& circuit) : c(circuit) {
-    LOG(2, "Opening Sylvan BDDs" << endl);
-    lace_start(workers, 0); // deque_size 0
-    long long initnodes = maxnodes >> 8;
-    long long maxcache = maxnodes >> 4;
-    long long initcache = maxcache >> 4;
-    sylvan_set_sizes(initnodes, maxnodes, initcache, maxcache);
-    sylvan_init_package();
-    sylvan_init_bdd();
-}
-
-Solver::~Solver() {
-    sylvan_stats_report(stdout); // requires SYLVAN_STATS=on during Sylvan compilation
-    sylvan_quit();
-    lace_stop();
-    LOG(2, "Closed Sylvan BDDs" << endl);
-}
 
 bool Solver::solve() {
     matrix2bdd();
@@ -40,8 +28,8 @@ bool Solver::solve() {
 // Here we assume that either the matrix is a leaf, or all variables 
 // except for the first (outermost) block have been eliminated
 bool Solver::verdict() const {
-    if (matrix.isConstant()) {
-        return matrix == sylvan_true;
+    if (matrix->isConstant()) {
+        return *matrix == sylvan_true;
     }
     else { // there must be at least one variable
         return (c.getBlock(0).quantifier == Exists);
@@ -51,7 +39,7 @@ bool Solver::verdict() const {
 // Here we assume that either the matrix is a leaf, or all variables 
 // except for the first (outermost) block have been eliminated
 Valuation& Solver::example() const {
-    Valuation*valuation = new Valuation(); // empty
+    Valuation* valuation = new Valuation(); // empty
     if (c.maxBlock() == 0 ||
         verdict() != (c.getBlock(0).quantifier == Exists)) {
         return *valuation; // no example possible
@@ -72,9 +60,9 @@ Valuation& Solver::example() const {
         for (int x : vars) varSet.add(x);
         vector<bool> val;
         if (q==Exists)
-            val = matrix.PickOneCube(varSet);
+            val = matrix->PickOneCube(varSet);
         else
-            val = (!matrix).PickOneCube(varSet);
+            val = (!*matrix).PickOneCube(varSet);
 
         // Note: Sylvan valuation is sorted on identifiers
         // Example: if vars = [2,7,3,8,9] then vals = [v2,v3,v7,v8,v9]
@@ -122,7 +110,7 @@ void Solver::matrix2bdd() {
         bdds.push_back(bdd);
         // bdd.PrintDot(stdout);
     }
-    matrix = toBdd(c.getOutput()); // final result
+    *matrix = toBdd(c.getOutput()); // final result
 }
 
 void Solver::prefix2bdd() {
@@ -130,7 +118,7 @@ void Solver::prefix2bdd() {
 
     // Quantify blocks from last to second, unless fully resolved
     for (int i=c.maxBlock()-1; i>0; i--) {
-        if (matrix == sylvan_true || matrix == sylvan_false) {
+        if (matrix->isConstant()) {
             LOG(2, "  (early termination)" << endl);
             break;
         }
@@ -142,9 +130,9 @@ void Solver::prefix2bdd() {
             cube *= Bdd::bddVar(var);
         }
         if (b.quantifier == Forall)
-            matrix = matrix.UnivAbstract(cube);
+            *matrix = matrix->UnivAbstract(cube);
         else
-            matrix = matrix.ExistAbstract(cube);
-        LOG(2,"(" << matrix.NodeCount() << " nodes)" << endl);
+            *matrix = matrix->ExistAbstract(cube);
+        LOG(2,"(" << matrix->NodeCount() << " nodes)" << endl);
     }
 }

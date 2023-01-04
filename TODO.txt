@@ -30,3 +30,4 @@ Suggestions for Sylvan:
 - resolve Bdd vs Cube vs BddSet
 - vector<bool> vs vector<uint_8>
 - bool 0,1 versus enum {0,1,2} (don't care values)
+- VariablesCube: also when not sorted!

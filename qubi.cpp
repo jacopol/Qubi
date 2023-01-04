@@ -5,6 +5,7 @@
 #include <fstream>
 #include "circuit_rw.hpp"
 #include "solver.hpp"
+#include "bdd_sylvan.hpp"
 #include "settings.hpp"
 
 using namespace std;
@@ -19,7 +20,7 @@ string NAME;
 istream* INFILE;
 
 int WORKERS = 4;
-long long TABLE = 1L<<28;
+long long TABLE = DEFAULT_TABLE;
 
 void usage() {
     cout << "Usage:"
@@ -68,9 +69,9 @@ void parseArgs(int argc, char* argv[]) {
         if (arg == "-keep" || arg == "-k")
             { KEEPNAMES = true; continue; }
         if (arg == "-verbose" || arg == "-v")
-            { VERBOSE = 2; continue; }
+            { VERBOSE = verbose; continue; }
         if (arg == "-quiet" || arg == "-q")
-            { VERBOSE = 0; continue; }
+            { VERBOSE = quiet; continue; }
         if (arg == "-help" || arg == "-h")
             { usage(); }
         if (arg[0] != '-' && NAME=="") {
@@ -119,8 +120,8 @@ int main(int argc, char *argv[]) {
     } else {
         bool verdict;
         Valuation valuation;
-        {
-            Solver solver = Solver(WORKERS, TABLE, qbf);
+        {   BDD_Sylvan bddpackage;
+            Solver solver = Solver(qbf, bddpackage);
             verdict = solver.solve();
             if (EXAMPLE) valuation = solver.example();
         }
