@@ -45,7 +45,7 @@ public:
 
 class Circuit {
     private:
-        string name;                // name of this circuit
+        string myname;                // name of this circuit
         int maxvar=1;               // next unused variable, start at 1
         vector<Block> prefix;
         vector<Gate> matrix;        // gate definitions (shifted by -maxvar)
@@ -54,21 +54,21 @@ class Circuit {
         vector<string> varnames;    // map identifiers to external names, start at 1
                                     // initialized by friend class Qcir_IO class
     public:
-        Circuit(string name);
-        int maxVar() const;
-        int maxBlock() const;
-        int maxGate() const;
+        Circuit(string name)                { myname = name; }
+        int maxVar() const                  { return maxvar; }
+        int maxBlock() const                { return prefix.size(); }
+        int maxGate() const                 { return matrix.size() + maxvar; }
 
-        const Block& getBlock(int i) const;
-        void addBlock(const Block& b);
+        const Block& getBlock(int i) const  { return prefix.at(i); }
+        void addBlock(const Block& b)       { prefix.push_back(b); }
 
-        const Gate& getGate(int i) const;
-        void addGate(const Gate& g);
+        const Gate& getGate(int i) const    { return matrix.at(i - maxvar); }
+        void addGate(const Gate& g)         { matrix.push_back(g); }
         
-        int getOutput() const;
-        void setOutput(int out);
+        int getOutput() const               { return output; }
+        void setOutput(int out)             { output = out; }
 
-        const string& getVarOrGate(int i) const;
+        const string& varString(int i) const   { return varnames.at(i); }
         void printInfo(std::ostream& s) const;
 
     // Transformations

@@ -106,7 +106,7 @@ void Solver::matrix2bdd() {
     }
     LOG(1,"Building BDD for Matrix" << endl;);
     for (int i=c.maxVar(); i<=abs(c.getOutput());i++) {
-        LOG(2,"- gate " << c.getVarOrGate(i));
+        LOG(2,"- gate " << c.varString(i));
         Gate g = c.getGate(i);
         bool isAnd = g.output==And;
         // Build a conjunction or disjunction:

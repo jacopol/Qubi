@@ -27,9 +27,9 @@ string Qcir_IO::litString(int literal) const {
         return to_string(literal);
     } else {
         if (literal > 0) {
-            return c.getVarOrGate(literal);
+            return c.varString(literal);
         } else {
-            return "-" + c.getVarOrGate(-literal);
+            return "-" + c.varString(-literal);
         }
     }
 }
@@ -66,7 +66,7 @@ void Qcir_IO::writeQcir(std::ostream& s) const {
 
 void Qcir_IO::writeVal(std::ostream& s, const Valuation& val) const {
     for (pair<int,bool> v : val) {
-    s << c.getVarOrGate(v.first) << "=" 
+    s << c.varString(v.first) << "=" 
       << (v.second ? "true " : "false ");
     }
     cout << endl;
@@ -236,29 +236,9 @@ try {
     if (regex_search(line, m, regex(literal))) {
         c.setOutput(getLiteral(m[0]));
     }
-} 
-catch (InputUndefined& err) { 
-    cout << err.what() << endl; 
-    exit(-1);
-} 
-catch (VarDefined& err) { 
-    cout << err.what() << endl; 
-    exit(-1);
-} 
-catch (ConnectiveError& err) { 
-    cout << err.what() << endl; 
-    exit(-1);
-} 
-catch (OutputMissing& err) { 
-    cout << err.what() << endl; 
-    exit(-1);
-}
-catch (ParseError& err) { 
-    cout << err.what() << endl; 
-    exit(-1);
 }
 catch (QBFexception& err) { 
-    cout << "Unexpected exception: " + err.what() << endl; 
+    cout << err.what() << endl; 
     exit(-1);
 }
 }
