@@ -10,6 +10,7 @@
 class Syl_Bdd : public QuBdd {
     sylvan::Bdd bdd;
 
+public:
     Syl_Bdd& operator+=(const Syl_Bdd& other) { bdd += other.bdd; return *this; }
     Syl_Bdd& operator*=(const Syl_Bdd& other) { bdd *= other.bdd; return *this; }
 

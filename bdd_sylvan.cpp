@@ -20,3 +20,12 @@ BDD_Sylvan::~BDD_Sylvan() {
     lace_stop();
     LOG(2, "Closed Sylvan BDDs" << std::endl);
 }
+/*
+       BddSet varSet = BddSet();
+        for (int x : vars) varSet.add(x);
+        vector<bool> val;
+        if (q==Exists)
+            val = matrix->PickOneCube(varSet);
+        else
+            val = (!*matrix).PickOneCube(varSet);
+*/            

@@ -11,7 +11,7 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-Solver::Solver(const Circuit& circuit, const BDD_wrapper& bdd) : c(circuit), matrix(new sylvan::Bdd) { }
+Solver::Solver(const Circuit& circuit, const BDD_wrapper& bdd) : c(circuit), matrix(nullptr) { }
 
 Solver::~Solver() { 
     delete matrix;
@@ -29,7 +29,7 @@ bool Solver::solve() {
 // except for the first (outermost) block have been eliminated
 bool Solver::verdict() const {
     if (matrix->isConstant()) {
-        return *matrix == sylvan_true;
+        return *matrix == matrix->QTrue();
     }
     else { // there must be at least one variable
         return (c.getBlock(0).quantifier == Exists);
@@ -60,9 +60,9 @@ Valuation& Solver::example() const {
         for (int x : vars) varSet.add(x);
         vector<bool> val;
         if (q==Exists)
-            val = matrix->PickOneCube(varSet);
+            val = matrix->PickOneCube(vars);
         else
-            val = (!*matrix).PickOneCube(varSet);
+            val = (!*matrix).PickOneCube(vars);
 
         // Note: Sylvan valuation is sorted on identifiers
         // Example: if vars = [2,7,3,8,9] then vals = [v2,v3,v7,v8,v9]
@@ -81,16 +81,16 @@ Valuation& Solver::example() const {
 }
 
 void Solver::matrix2bdd() {
-    vector<Bdd> bdds;                    // lookup table previous BDDs
-    bdds.push_back(sylvan_true);         // unused entry 0
-    auto toBdd = [&bdds](int i)-> Bdd {  // negate (if necessary) and look up Bdd
+    vector<QuBdd> bdds;                    // lookup table previous BDDs
+    bdds.push_back(matrix->QTrue());           // unused entry 0
+    auto toBdd = [&bdds](int i)-> QuBdd& { // negate (if necessary) and look up Bdd
         if (i>0)
             return bdds[i];
         else
             return !bdds[-i];
     };
     for (int i=1; i<c.maxVar(); i++) {
-        bdds.push_back(Bdd::bddVar(i));
+        bdds.push_back(matrix->bddVar(i));
     }
     LOG(1,"Building BDD for Matrix" << endl;);
     for (int i=c.maxVar(); i<=abs(c.getOutput());i++) {
@@ -98,7 +98,7 @@ void Solver::matrix2bdd() {
         Gate g = c.getGate(i);
         bool isAnd = g.output==And;
         // Build a conjunction or disjunction:
-        Bdd bdd = ( isAnd ? sylvan_true : sylvan_false); // neutral element
+        QuBdd& bdd = ( isAnd ? matrix->QTrue() : matrix->QTrue()); // neutral element
         for (int arg: g.inputs) {
             LOG(2,".");
             if (isAnd)
@@ -125,14 +125,14 @@ void Solver::prefix2bdd() {
         Block b = c.getBlock(i);
         LOG(2,"- block " << i+1 << " (" << b.size() << "x " << Qtext[b.quantifier] << "): ");
 
-        Bdd cube = sylvan_true;        
+        QuBdd *cube = &(matrix->QTrue());        
         for (int var : b.variables) {
-            cube *= Bdd::bddVar(var);
+            *cube *= matrix->bddVar(var);
         }
         if (b.quantifier == Forall)
-            *matrix = matrix->UnivAbstract(cube);
+            *matrix = matrix->UnivAbstract(*cube);
         else
-            *matrix = matrix->ExistAbstract(cube);
+            *matrix = matrix->ExistAbstract(*cube);
         LOG(2,"(" << matrix->NodeCount() << " nodes)" << endl);
     }
 }

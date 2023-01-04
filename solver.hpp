@@ -12,7 +12,7 @@
 class Solver {
     private:
         const Circuit& c;   // the circuit to solve
-        sylvan::Bdd *matrix; // keeps current state of algorithm
+        QuBdd *matrix; // keeps current state of algorithm
 
         // The following functions must be called in this order:
         void matrix2bdd();  // transform all gates up to output to BDD 
