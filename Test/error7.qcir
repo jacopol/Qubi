@@ -1,9 +1,8 @@
- 
 forall(1)
 exists(2)
 forall(3, 4)
-
 output(7)
+
 # Test double gate
 
 4 = or(1, 3)

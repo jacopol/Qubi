@@ -1,5 +1,4 @@
 #QCIR-G14
-
 # test with identifiers rather than numbers
 
 exists(x, y, z)

@@ -23,14 +23,10 @@ Refactor:
 - refactor: Solver could be an abstract class / interface
 - refactor: Make general BDD interface, where Sylvan is one implementation
 
-C++ language related:
-- use inline functions? (but moves code to header files)
-
 Suggestions for Sylvan:
 - simplify initialisation (at least for non-lace use)
 - vector<bool> PickOneCube(vector<uint32_t>variables) 
 - map<int,bool> PickOneCube(BDDset variables)
-
 - resolve Bdd vs Cube vs BddSet
 - vector<bool> vs vector<uint_8>
 - bool 0,1 versus enum {0,1,2} (don't care values)

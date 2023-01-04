@@ -1,5 +1,4 @@
-#QCIR-14G
-
+#QCIR-G14
 # test unused gates (output last)
 
 forall(x, y)

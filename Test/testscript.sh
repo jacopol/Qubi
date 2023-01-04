@@ -1,15 +1,17 @@
-# test that reordering doesn't change the formula
-
 mkdir OUT
+
+# check various error messages
 
 for x in e*.qcir; do
     echo $x
     ../qubi $x
 done
 
+# test that reordering doesn't change the formula
+
 for x in s*.qcir q*.qcir; do
     echo $x
-    ../qubi -r -p -k $x > OUT/test.qcir
+    ../qubi -r -p -k -q $x > OUT/test.qcir
     diff $x OUT/test.qcir
 done
 
