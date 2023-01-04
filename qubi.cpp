@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
     } else {
         bool verdict;
         Valuation valuation;
-        {   BDD_Sylvan bddpackage;
+        {   Sylvan_mgr bddpackage;
             Solver solver = Solver(qbf, bddpackage);
             verdict = solver.solve();
             if (EXAMPLE) valuation = solver.example();

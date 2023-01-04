@@ -3,7 +3,7 @@
 
 using namespace sylvan;
 
-BDD_Sylvan::BDD_Sylvan(int workers, long long maxnodes) {
+Sylvan_mgr::Sylvan_mgr(int workers, long long maxnodes) {
     LOG(2, "Opening Sylvan BDDs" << std::endl);
     lace_start(workers, 0); // deque_size 0
     long long initnodes = maxnodes >> 8;
@@ -14,7 +14,7 @@ BDD_Sylvan::BDD_Sylvan(int workers, long long maxnodes) {
     sylvan_init_bdd();
 }
 
-BDD_Sylvan::~BDD_Sylvan() {
+Sylvan_mgr::~Sylvan_mgr() {
     sylvan_stats_report(stdout); // requires SYLVAN_STATS=on during Sylvan compilation
     sylvan_quit();
     lace_stop();

@@ -11,7 +11,7 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-Solver::Solver(const Circuit& circuit, const BDD_wrapper& bdd) : c(circuit), matrix(new sylvan::Bdd) { }
+Solver::Solver(const Circuit& circuit, const Sylvan_mgr& bdd) : c(circuit), matrix(new sylvan::Bdd) { }
 
 Solver::~Solver() { 
     delete matrix;

@@ -6,7 +6,7 @@
 
 #include <sylvan.h>
 #include <sylvan_obj.hpp>
-#include "bdd_wrapper.hpp"
+#include "bdd_sylvan.hpp"
 #include "circuit.hpp"
 
 class Solver {
@@ -20,7 +20,7 @@ class Solver {
         bool verdict() const;
 
     public:
-        Solver(const Circuit& circuit, const BDD_wrapper& bdd);
+        Solver(const Circuit& circuit, const Sylvan_mgr& bdd);
         ~Solver();
         bool solve();
         Valuation& example() const; // can only be called after solve()
