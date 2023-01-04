@@ -44,17 +44,18 @@ public:
 };
 
 class Circuit {
-    private:
-        string myname;                // name of this circuit
+    protected:
         int maxvar=1;               // next unused variable, start at 1
+        vector<int> permutation;    // permutation of variables (empty if identity)
+
+    private:
+        const string myname;        // name of this circuit
         vector<Block> prefix;
         vector<Gate> matrix;        // gate definitions (shifted by -maxvar)
         int output;                 // output gate
 
-        vector<string> varnames;    // map identifiers to external names, start at 1
-                                    // initialized by friend class Qcir_IO class
     public:
-        Circuit(string name)                { myname = name; }
+        Circuit(const string& name) : myname(name) { }
         int maxVar() const                  { return maxvar; }
         int maxBlock() const                { return prefix.size(); }
         int maxGate() const                 { return matrix.size() + maxvar; }
@@ -68,7 +69,7 @@ class Circuit {
         int getOutput() const               { return output; }
         void setOutput(int out)             { output = out; }
 
-        const string& varString(int i) const   { return varnames.at(i); }
+        virtual const string& varString(int i) const;
         void printInfo(std::ostream& s) const;
 
     // Transformations
@@ -76,10 +77,6 @@ class Circuit {
         Circuit& split();   // every block gets single quantifier
         Circuit& combine(); // blocks become strictly alternating
         Circuit& reorder(); // reorder by DFS pass
-
-    // Delegating IO
-
-        friend class Qcir_IO;
 };
 
 #endif

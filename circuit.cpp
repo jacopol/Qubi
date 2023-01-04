@@ -7,6 +7,11 @@
 #include "circuit.hpp"
 #include "settings.hpp"
 
+// default string when variable names are unknown
+const string& Circuit::varString(int i) const {
+    return *(new string("id:" + std::to_string(i))); 
+}
+
 void Circuit::printInfo(std::ostream &s) const {
     s   << "Quantified Circuit \"" << myname << "\" (" 
         << maxvar-1 << " vars in " 
@@ -55,14 +60,14 @@ Circuit& Circuit::combine() {
 Circuit& Circuit::reorder() {
     LOG(1, "Reordering Variables" << std::endl)
     int next=1;                                        // next variable index to use
-    auto permutation = std::vector<int>(maxVar(),0);   // no indices are assigned yet
+    auto reordering = std::vector<int>(maxVar(),0);   // no indices are assigned yet
     auto allvars = std::set<int>(); 
     for (int i=1; i<maxGate(); i++)                    // all vars/gates are yet unseen
         allvars.insert(i);
 
     // DFS search starting from output
     // - remove vars/gates from allvars
-    // - add vars->next to permutation
+    // - add vars->next to reordering
 
     auto todo = vector<int>({abs(getOutput())});
     while (todo.size()!=0) {
@@ -71,7 +76,7 @@ Circuit& Circuit::reorder() {
         if (allvars.count(v)!=0) { // var/gate is now visited the first time
             if (v<maxVar()) {
                 allvars.erase(v);
-                permutation[v] = next++;              // map variable v to next index
+                reordering[v] = next++;              // map variable v to next index
             } else {                                  
                 allvars.erase(v);
                 for (int x: getGate(v).inputs)        // visit all inputs of gate v
@@ -86,42 +91,39 @@ Circuit& Circuit::reorder() {
     for (int x : allvars) {
         LOG(2, varString(x) << ", "); // one , too much
         if (x<maxVar()) 
-            permutation[x] = next++;
+            reordering[x] = next++;
     }
     LOG(2, std::endl);
     assert(next == maxVar());
 
-    // Apply the permutation ...
+    // Store the inverse permutation (to trace back original names)
+    permutation = std::vector<int>(maxVar(),0);
+    for (int i=1; i<maxVar(); i++)
+        permutation[reordering[i]] = i;
+
+    // Apply the reordering ...
     // ...to prefix
     for (Block &b : prefix)
-        for (int i=0; i< b.variables.size(); i++)
-            b.variables[i] = permutation[b.variables[i]];
+        for (int &var : b.variables)
+            var = reordering[var];
 
     // ...to matrix
     for (Gate &g : matrix)
-        for (int i=0; i< g.inputs.size(); i++) {
-            int &input = g.inputs[i];
-            if (abs(input)<maxVar()) {
-                if (input<0) 
-                    input = -permutation[-input];
+        for (int &input : g.inputs) {
+            if (abs(input) < maxVar()) {
+                if (input > 0) 
+                    input = reordering[input];
                 else
-                    input = permutation[input];
+                    input = -reordering[-input];
             }
         }
 
-    // ...to varnames
-    auto newnames = vector<string>(maxVar(),"");
-    for (int i=1; i<maxVar(); i++) 
-        newnames[permutation[i]] = varnames[i];
-    for (int i=1; i<maxVar(); i++) 
-        varnames[i] = newnames[i];
-
     // ...to output
-    if (abs(output)<maxVar()) {
+    if (abs(output) < maxVar()) {
         if (output > 0)
-            output = permutation[output];
+            output = reordering[output];
         else
-            output = -permutation[-output];
+            output = -reordering[-output];
     }
 
     return *this;

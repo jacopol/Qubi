@@ -3,8 +3,7 @@
 
 #include <iostream>
 #include <fstream>
-#include "circuit.hpp"
-#include "qcir_io.hpp"
+#include "circuit_rw.hpp"
 #include "solver.hpp"
 #include "settings.hpp"
 
@@ -31,7 +30,7 @@ void usage() {
          << "    or:\t the preprocessed QBF in QCIR format\n\n"
          << "Options:\n"
          << "\t-e, -example: \tshow witness for outermost quantifiers\n"
-         << "\t-p, -print: \tprint the (transformed) qcir to stdout\n"
+         << "\t-p, -print: \tprint the (transformed) qbf to stdout\n"
          << "\t-k, -keep: \tkeep the original gates/vars (or else: renumber)\n"
          << "\t-s, -split: \ttransform: split blocks in single quantifier\n"
          << "\t-c, -combine: \ttransform: combine blocks with same quantifier\n"
@@ -95,38 +94,37 @@ void parseArgs(int argc, char* argv[]) {
     }
 }
 
-void report_result(const Qcir_IO& qcir, bool verdict, const Valuation& valuation) {
+void report_result(const CircuitRW& qbf, bool verdict, const Valuation& valuation) {
     cout << "Result: " << (verdict ? "TRUE" : "FALSE") << endl;
     if (EXAMPLE) {
         if (valuation.size() == 0)
             cout << "No example" << endl;
         else {
             cout << "Example: ";
-            qcir.writeVal(cout, valuation);
+            qbf.writeVal(cout, valuation);
         }
     }
 }
 
 int main(int argc, char *argv[]) {
     parseArgs(argc, argv);
-    Circuit qcir(NAME); 
-    Qcir_IO rw(qcir);
-    rw.readQcir(*INFILE);
-    if (VERBOSE>=1) qcir.printInfo(cerr);
-    if (SPLIT) qcir.split();
-    if (COMBINE) qcir.combine();
-    if (REORDER) qcir.reorder();
+    CircuitRW qbf(NAME); 
+    qbf.readQcir(*INFILE);
+    if (VERBOSE>=1) qbf.printInfo(cerr);
+    if (SPLIT) qbf.split();
+    if (COMBINE) qbf.combine();
+    if (REORDER) qbf.reorder();
     if (PRINT) {
-        rw.writeQcir(cout);
+        qbf.writeQcir(cout);
     } else {
         bool verdict;
         Valuation valuation;
         {
-            Solver solver = Solver(WORKERS, TABLE, qcir);
+            Solver solver = Solver(WORKERS, TABLE, qbf);
             verdict = solver.solve();
             if (EXAMPLE) valuation = solver.example();
         }
-        report_result(rw, verdict, valuation);
+        report_result(qbf, verdict, valuation);
     }
     return 0;
 }

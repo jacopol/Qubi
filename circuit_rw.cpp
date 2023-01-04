@@ -6,36 +6,42 @@
 #include <cassert>
 #include <cctype>
 #include <algorithm>
-#include "qcir_io.hpp"
+#include "circuit_rw.hpp"
 #include "messages.hpp"
 #include "settings.hpp"
 
 using namespace std;
 
-// Initialisation: this wraps around an (empty) Circuit reference
-// lifetime of the circuit should survive qcir_io
+CircuitRW::CircuitRW(const string& name) : Circuit(name) {   
+    varnames = vector<string>({""}); // start from 1st position
+}
 
-Qcir_IO::Qcir_IO(Circuit& circuit) : c(circuit) {   
-    c.varnames = vector<string>({""}); // start from 1st position
+const string& CircuitRW::varString(int i) const { 
+    if (permutation.size()==0)
+        return varnames.at(i); 
+    else if (abs(i) >= maxVar())
+        return varnames.at(i); 
+    else 
+        return varnames.at(permutation[i]);
 }
 
 /*** Writing QCIR specification ***/
 
 // convert a literal to a string
-string Qcir_IO::litString(int literal) const {
+string CircuitRW::litString(int literal) const {
     if (!KEEPNAMES) {
         return to_string(literal);
     } else {
         if (literal > 0) {
-            return c.varString(literal);
+            return varString(literal);
         } else {
-            return "-" + c.varString(-literal);
+            return "-" + varString(-literal);
         }
     }
 }
 
 // output a vector of literals in comma-separated form
-void Qcir_IO::commaSeparate(std::ostream& s, const vector<int>& literals) const {
+void CircuitRW::commaSeparate(std::ostream& s, const vector<int>& literals) const {
     if (literals.size()>0) {
         s << litString(literals[0]);
     }
@@ -45,17 +51,17 @@ void Qcir_IO::commaSeparate(std::ostream& s, const vector<int>& literals) const 
 }
 
 // write a QCIR specification to output
-void Qcir_IO::writeQcir(std::ostream& s) const {
+void CircuitRW::writeQcir(std::ostream& s) const {
     s << "#QCIR-G14" << endl;
-    for (int i=0; i < c.maxBlock() ; i++) {
-        Block b = c.getBlock(i);
+    for (int i=0; i < maxBlock() ; i++) {
+        Block b = getBlock(i);
         s << Qtext[b.quantifier] << "(";
         commaSeparate(s, b.variables);
         s << ")" << endl;
     }
-    s << "output(" << litString(c.getOutput()) << ")" << endl;
-    for (int i=c.maxVar() ; i<c.maxGate(); i++) {
-        Gate g = c.getGate(i);
+    s << "output(" << litString(getOutput()) << ")" << endl;
+    for (int i=maxVar() ; i<maxGate(); i++) {
+        Gate g = getGate(i);
         s << litString(i) << " = " << Ctext[g.output] << "(";
         commaSeparate(s, g.inputs);
         s << ")" << endl;
@@ -64,9 +70,9 @@ void Qcir_IO::writeQcir(std::ostream& s) const {
 
 /*** Writing a Valuation ***/
 
-void Qcir_IO::writeVal(std::ostream& s, const Valuation& val) const {
+void CircuitRW::writeVal(std::ostream& s, const Valuation& val) const {
     for (pair<int,bool> v : val) {
-    s << c.varString(v.first) << "=" 
+    s << varString(v.first) << "=" 
       << (v.second ? "true " : "false ");
     }
     cout << endl;
@@ -77,56 +83,56 @@ void Qcir_IO::writeVal(std::ostream& s, const Valuation& val) const {
 const string variable("[a-zA-z0-9_]+");
 const string literal("-?" + variable);
 
-void Qcir_IO::setVarOrGate(const string& var, int i) {
-    assert(i==c.varnames.size());
+void CircuitRW::setVarOrGate(const string& var, int i) {
+    assert(i==varnames.size());
     vars[var] = i;
-    c.varnames.push_back(var);
-}
-
-// lookup an existing variable and check that it exists
-int Qcir_IO::getVarOrGateIdx(const string& line) const {
-    assertThrow(vars.find(line) != vars.end(), InputUndefined(line,lineno))
-    return vars.at(line);
+    varnames.push_back(var);
 }
 
 // create a new gate check that it didn't exist
-void Qcir_IO::createGate(const string& gate) {
+void CircuitRW::declGate(const string& gate) {
     assertThrow(vars.find(gate) == vars.end(), VarDefined(gate,lineno))
-    setVarOrGate(gate, c.maxGate());
+    setVarOrGate(gate, maxGate());
 }
 
 // create a new variable and check that it didn't exist
-int Qcir_IO::createVar(const string& var) {
+int CircuitRW::declVar(const string& var) {
     assertThrow(vars.find(var)==vars.end(), VarDefined(var,lineno))
-    setVarOrGate(var, c.maxvar);
-    return c.maxvar++;
+    setVarOrGate(var, maxvar);
+    return maxvar++;
 }
 
 // Note: currently, we allow any separators, not just ','
-vector<int> Qcir_IO::createVariables(string &line) {
+vector<int> CircuitRW::declVars(string &line) {
     vector<int> result;
     smatch m;
     while (regex_search(line, m, regex(variable))) {
-        result.push_back(createVar(m[0]));
+        result.push_back(declVar(m[0]));
         line = m.suffix();
     }
     return result;
 }
 
-int Qcir_IO::getLiteral(const string& line) const {
+// lookup an existing variable and check that it exists
+int CircuitRW::getIndex(const string& line) const {
+    assertThrow(vars.find(line) != vars.end(), InputUndefined(line,lineno))
+    return vars.at(line);
+}
+
+int CircuitRW::readLiteral(const string& line) const {
     assertThrow(line.size()>0, InputUndefined(line, lineno));
     if (line[0] != '-') 
-        return getVarOrGateIdx(line);
+        return getIndex(line);
     else 
-        return -getVarOrGateIdx(line.substr(1, line.size()));
+        return -getIndex(line.substr(1, line.size()));
 }
 
 // Note: currently, we allow any separators, not just ','
-vector<int> Qcir_IO::getLiterals(string& line) const {
+vector<int> CircuitRW::readLiterals(string& line) const {
     vector<int> result;
     smatch m;
     while (regex_search(line, m, regex(literal))) {
-        result.push_back(getLiteral(m[0]));
+        result.push_back(readLiteral(m[0]));
         line = m.suffix();
     }
     return result;
@@ -147,12 +153,12 @@ bool find_keyword(string& line, const string& keyword) {
 }
 
 // Check and match line as "connective(lit1,...,litn)"
-Gate Qcir_IO::getGate(string& line) const {
+Gate CircuitRW::readGate(string& line) const {
     Connective connective;
     for (Connective q : Connectives) {
         string ctext = Ctext[q];
         if (find_keyword(line, ctext)) {
-            return Gate(q, getLiterals(line));
+            return Gate(q, readLiterals(line));
         }
     }
     // the line didn't match
@@ -160,19 +166,30 @@ Gate Qcir_IO::getGate(string& line) const {
 }
 
 // Process block declaration "quantifier(var1,...,varn)"
-bool Qcir_IO::readBlock(string& line) {
+bool CircuitRW::readBlock(string& line) {
     for (Quantifier q : Quantifiers) {
         string qtext = Qtext[q];
         if (find_keyword(line, qtext)) {
-            c.addBlock(Block(q, createVariables(line)));
+            addBlock(Block(q, declVars(line)));
             return true; // skip other quantifiers
         }
     }
     return false;
 }
 
+// Recognize output definition "output(literal)"
+// save the output line for later processing
+bool CircuitRW::readOutput(string& line) {
+    if (find_keyword(line, "output")) {
+        outputline = line;
+        outputlineno = lineno;
+        return true;
+    }
+    else return false;
+}
+
 // Process gate definition "gatename = connective(lit1,...,litn)"
-bool Qcir_IO::readGateDef(string& line) {
+bool CircuitRW::readGateDef(string& line) {
     int pos = line.find("=");
     if (pos == string::npos) return false;
     string gatename = line.substr(0, pos);
@@ -180,21 +197,10 @@ bool Qcir_IO::readGateDef(string& line) {
     // Note: 
     // - we need to check the gate before creating the gate name
     // - we need to add the gate after creating the gate name
-    Gate g = getGate(line);
-    createGate(gatename);
-    c.addGate(g);
+    Gate g = readGate(line);
+    declGate(gatename);
+    addGate(g);
     return true;
-}
-
-// Recognize output definition "output(literal)"
-// save the output line for later processing
-bool Qcir_IO::readOutput(string& line) {
-    if (find_keyword(line, "output")) {
-        outputline = line;
-        outputlineno = lineno;
-        return true;
-    }
-    else return false;
 }
 
 void removeWhiteSpace(string& line) {
@@ -207,7 +213,7 @@ void removeWhiteSpace(string& line) {
     line.erase(p2, line.end());
 }
 
-void Qcir_IO::readQcir(istream &input) {
+void CircuitRW::readQcir(istream &input) {
     string line;
 try {
     while (getline(input, line)) {
@@ -234,7 +240,7 @@ try {
     lineno = outputlineno; // only to get correct error message
     smatch m;
     if (regex_search(line, m, regex(literal))) {
-        c.setOutput(getLiteral(m[0]));
+        setOutput(readLiteral(m[0]));
     }
 }
 catch (QBFexception& err) { 
