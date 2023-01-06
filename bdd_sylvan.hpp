@@ -15,26 +15,22 @@ public:
 
 class Sylvan_Bdd {
 public:
-    Sylvan_Bdd();
-    Sylvan_Bdd operator=(const Sylvan_Bdd& right);
-    bool operator==(const Sylvan_Bdd& other) const;
+    Sylvan_Bdd()                { Sylvan_Bdd(false); }
+    Sylvan_Bdd(bool b)          { bdd = (b ? sylvan::sylvan_true : sylvan::sylvan_false); }
+    Sylvan_Bdd(int i)           { bdd = sylvan::Bdd::bddVar(i);}
+    Sylvan_Bdd(const sylvan::Bdd& b) { bdd=b; }
 
-    Sylvan_Bdd operator+=(const Sylvan_Bdd& other) { bdd += other.bdd; return *this; }
-    Sylvan_Bdd operator*=(const Sylvan_Bdd& other) { bdd *= other.bdd; return *this; }
-    Sylvan_Bdd operator!() const;    
+    bool isConstant() const     { return bdd.isConstant(); }
+    size_t NodeCount() const    { return bdd.NodeCount(); };
 
-    static Sylvan_Bdd QTrue();
-    static Sylvan_Bdd QFalse();
-    static Sylvan_Bdd bddVar(int);
+    bool operator==(const Sylvan_Bdd& other) const  { return bdd == other.bdd; }
+    Sylvan_Bdd& operator+=(const Sylvan_Bdd& other) { bdd += other.bdd; return *this; }
+    Sylvan_Bdd& operator*=(const Sylvan_Bdd& other) { bdd *= other.bdd; return *this; }
+    Sylvan_Bdd  operator!() const                   { return Sylvan_Bdd(!bdd); }    
+    Sylvan_Bdd UnivAbstract(const std::vector<int>& variables)  const;
+    Sylvan_Bdd ExistAbstract(const std::vector<int>& variables) const;
 
-    bool isConstant() const;
-
-    Sylvan_Bdd UnivAbstract(const Sylvan_Bdd& cube) const;
-    Sylvan_Bdd ExistAbstract(const Sylvan_Bdd& cube) const;
-    size_t NodeCount() const;
-
-    std::vector<bool> PickOneCube(const std::vector<int> variables) const;
-
+    std::vector<bool> PickOneCube(const std::vector<int>& variables) const;
 private:
     sylvan::Bdd bdd;
 

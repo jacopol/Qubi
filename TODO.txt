@@ -19,9 +19,8 @@ Improvements:
 - statistics: print peak BDD
 
 Refactor:
-- refactor: Reading and Writing as subclass of Circuit
 - refactor: Solver could be an abstract class / interface
-- refactor: Make general BDD interface, where Sylvan is one implementation
+- refactor: Try other BDD packages (or Sylvan ZDD)
 
 Suggestions for Sylvan:
 - simplify initialisation (at least for non-lace use)
