@@ -13,8 +13,6 @@ Solving:
 - use parallel disjunction/conjunction
 
 Improvements:
-- use options with =, as in -t=27 -w=4
-- option for setting tablesize, workers
 - statistics: timing
 - statistics: print peak BDD
 
@@ -31,3 +29,5 @@ Suggestions for Sylvan:
 - vector<bool> vs vector<uint_8>
 - bool 0,1 versus enum {0,1,2} (don't care values)
 - VariablesCube: also when not sorted!
+- sylvan_quite vs quitPackage (in example)
+- why is Sylvan a class? Should be sylvan_mgr? Singleton pattern?

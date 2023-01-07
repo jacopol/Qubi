@@ -9,9 +9,12 @@
 
 using namespace sylvan;
 
-Sylvan_mgr::Sylvan_mgr(int workers, long long maxnodes) {
-    LOG(2, "Opening Sylvan BDDs" << std::endl);
+// start Sylvan, with number of workers, and unique table size 2^size
+Sylvan_mgr::Sylvan_mgr(int workers, int size) {
+    LOG(2, "Opening Sylvan BDDs ("
+        << workers << " workers, table=2^" << size << ")" << std::endl);
     lace_start(workers, 0); // deque_size 0
+    long long maxnodes = 1L << size; 
     long long initnodes = maxnodes >> 8;
     long long maxcache = maxnodes >> 4;
     long long initcache = maxcache >> 4;

@@ -28,25 +28,20 @@ const string& CircuitRW::varString(int i) const {
 
 // convert a literal to a string
 string CircuitRW::litString(int literal) const {
-    if (!KEEPNAMES) {
+    if (!KEEPNAMES)
         return to_string(literal);
-    } else {
-        if (literal > 0) {
-            return varString(literal);
-        } else {
-            return "-" + varString(-literal);
-        }
-    }
+    else if (literal > 0)
+        return varString(literal);
+    else
+        return "-" + varString(-literal);
 }
 
 // output a vector of literals in comma-separated form
 void CircuitRW::commaSeparate(std::ostream& s, const vector<int>& literals) const {
-    if (literals.size()>0) {
+    if (literals.size()>0) 
         s << litString(literals[0]);
-    }
-    for (int i=1; i < literals.size(); i++) {
+    for (int i=1; i < literals.size(); i++)
         s << ", " << litString(literals[i]);
-    }
 }
 
 // write a QCIR specification to output
@@ -71,8 +66,8 @@ void CircuitRW::writeQcir(std::ostream& s) const {
 
 void CircuitRW::writeVal(std::ostream& s, const Valuation& val) const {
     for (pair<int,bool> v : val) {
-    s << varString(v.first) << "=" 
-      << (v.second ? "true " : "false ");
+        s << varString(v.first) << "=" 
+        << (v.second ? "true " : "false ");
     }
     cout << endl;
 }
@@ -156,9 +151,8 @@ Gate CircuitRW::readGate(string& line) const {
     Connective connective;
     for (Connective q : Connectives) {
         string ctext = Ctext[q];
-        if (find_keyword(line, ctext)) {
+        if (find_keyword(line, ctext))
             return Gate(q, readLiterals(line));
-        }
     }
     // the line didn't match
     assertThrow(false, ConnectiveError(line, lineno));
@@ -222,9 +216,7 @@ try {
         removeWhiteSpace(line);
 
         // ignore empty lines and comments
-        if (line.size() == 0 || line[0] == '#') {
-            continue; // next line
-        }
+        if (line.size() == 0 || line[0] == '#') continue; // next line
 
         if (readBlock(line)) continue;
         if (readOutput(line)) continue;
@@ -238,9 +230,8 @@ try {
     line = outputline;
     lineno = outputlineno; // only to get correct error message
     smatch m;
-    if (regex_search(line, m, regex(literal))) {
+    if (regex_search(line, m, regex(literal)))
         setOutput(readLiteral(m[0]));
-    }
 }
 catch (QBFexception& err) { 
     cout << err.what() << endl; 
