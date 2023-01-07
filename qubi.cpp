@@ -22,11 +22,16 @@ istream* INFILE;
 int WORKERS = 4;
 long long TABLE = DEFAULT_TABLE;
 
-void usage() {
+void usage_short() {
     cout << "Usage:"
          << "\tqubi [-e | -p [-k]] [-s | -c] [-r] [-v | -q | -h] [infile]\n"
-         << "\tqubi [-h]\n\n"
-         << "Input:\t [infile] (DEFAULT: stdin). Input QBF problem in QCIR format\n"
+         << "Help:"
+         << "\tqubi -h"
+         << endl;
+}
+void usage() {
+    usage_short();
+    cout << "\nInput:\t [infile] (DEFAULT: stdin). Input QBF problem in QCIR format\n"
          << "Output:\t Result: [TRUE | FALSE] -- the solution of the QBF\n"
          << "    or:\t the preprocessed QBF in QCIR format\n\n"
          << "Options:\n"
@@ -40,7 +45,6 @@ void usage() {
          << "\t-q, -quiet: \tshow the output only\n"
          << "\t-h, -help: \tthis usage message\n"
          << endl;
-    exit(-1);
 }
 
 ifstream & openInput(string filename) {
@@ -52,40 +56,44 @@ ifstream & openInput(string filename) {
     return *infile;
 }
 
+bool parseOption(string arg) {
+    if (arg == "-example" || arg == "-e")   { EXAMPLE = true; return true; }
+    if (arg == "-split" || arg == "-s")     { SPLIT = true; return true; }
+    if (arg == "-combine" || arg == "-c")   { COMBINE = true; return true; }
+    if (arg == "-reorder" || arg == "-r")   { REORDER = true; return true; }
+    if (arg == "-print" || arg == "-p")     { PRINT = true; return true; }
+    if (arg == "-keep" || arg == "-k")      { KEEPNAMES = true; return true; }
+    if (arg == "-verbose" || arg == "-v")   { VERBOSE = verbose; return true; }
+    if (arg == "-quiet" || arg == "-q")     { VERBOSE = quiet; return true; }
+    if (arg == "-help" || arg == "-h")      { usage(); exit(1); }
+    return false;
+}
+
 void parseArgs(int argc, char* argv[]) {
     int i;
     for (i=1; i<argc; i++) {
-        string arg = string(argv[i]);
-        if (arg == "-example" || arg == "-e")
-            { EXAMPLE = true; continue; }
-        if (arg == "-split" || arg == "-s")
-            { SPLIT = true; continue; }
-        if (arg == "-combine" || arg == "-c")
-            { COMBINE = true; continue; }
-        if (arg == "-reorder" || arg == "-r")
-            { REORDER = true; continue; }
-        if (arg == "-print" || arg == "-p")
-            { PRINT = true; continue; }
-        if (arg == "-keep" || arg == "-k")
-            { KEEPNAMES = true; continue; }
-        if (arg == "-verbose" || arg == "-v")
-            { VERBOSE = verbose; continue; }
-        if (arg == "-quiet" || arg == "-q")
-            { VERBOSE = quiet; continue; }
-        if (arg == "-help" || arg == "-h")
-            { usage(); }
+        string arg = argv[i];
+        if (parseOption(arg)) continue;
         if (arg[0] != '-' && NAME=="") {
             NAME = arg;
             INFILE = &openInput(NAME);
             continue;
         }
-        cerr << "Couldn't parse argument: " << argv[i] << endl;
-        usage();
+        LOG(0, "Couldn't parse argument: " << argv[i] << endl);
+        usage_short(); exit(-1);
     }
 
     if (SPLIT && COMBINE) {
-        cerr << "Split (-s) and Combine (-s) contradict each other" << endl;
-        usage();
+        LOG(1, "Warning: ignoring contradictory -s(plit) and -c(ombine)" << endl);
+        SPLIT = COMBINE = false;
+    }
+
+    if (EXAMPLE && PRINT) {
+        LOG(1, "Warning: ignoring -e(xample) in case of -p(rint)" << endl);
+    }
+
+    if (KEEPNAMES && !PRINT) {
+        LOG(1, "Warning: ignoring -k(eep) without -p(rint)" << endl);
     }
 
     if (NAME == "") {
@@ -93,6 +101,8 @@ void parseArgs(int argc, char* argv[]) {
         INFILE = &cin;
         // INFILE = &openInput("Test/qbf3.qcir"); // for debugging
     }
+
+    LOG(1, "Reading input from \"" << NAME << "\"" << endl);
 }
 
 void report_result(const CircuitRW& qbf, bool verdict, const Valuation& valuation) {
@@ -109,8 +119,7 @@ void report_result(const CircuitRW& qbf, bool verdict, const Valuation& valuatio
 
 int main(int argc, char *argv[]) {
     parseArgs(argc, argv);
-    CircuitRW qbf(NAME); 
-    qbf.readQcir(*INFILE);
+    CircuitRW qbf(*INFILE);
     if (VERBOSE>=1) qbf.printInfo(cerr);
     if (SPLIT) qbf.split();
     if (COMBINE) qbf.combine();
@@ -120,11 +129,11 @@ int main(int argc, char *argv[]) {
     } else {
         bool verdict;
         Valuation valuation;
-        {   Sylvan_mgr bddpackage;
-            Solver solver = Solver(qbf, bddpackage);
+        {   Sylvan_mgr _;
+            Solver solver(qbf);
             verdict = solver.solve();
             if (EXAMPLE) valuation = solver.example();
-        }
+        } // Sylvan_mgr is closed before reporting the results
         report_result(qbf, verdict, valuation);
     }
     return 0;

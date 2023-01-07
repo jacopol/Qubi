@@ -49,13 +49,11 @@ class Circuit {
         vector<int> permutation;    // permutation of variables (empty if identity)
 
     private:
-        const string myname;        // name of this circuit
         vector<Block> prefix;
         vector<Gate> matrix;        // gate definitions (shifted by -maxvar)
         int output;                 // output gate
 
     public:
-        Circuit(const string& name) : myname(name) { }
         int maxVar() const                  { return maxvar; }
         int maxBlock() const                { return prefix.size(); }
         int maxGate() const                 { return matrix.size() + maxvar; }

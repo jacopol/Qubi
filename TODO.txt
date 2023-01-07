@@ -21,6 +21,7 @@ Improvements:
 Refactor:
 - refactor: Solver could be an abstract class / interface
 - refactor: Try other BDD packages (or Sylvan ZDD)
+- refactor: enforce bdd-manager discipline (singleton pattern?)
 
 Suggestions for Sylvan:
 - simplify initialisation (at least for non-lace use)

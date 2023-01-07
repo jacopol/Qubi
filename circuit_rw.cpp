@@ -12,9 +12,8 @@
 
 using namespace std;
 
-CircuitRW::CircuitRW(const string& name) : Circuit(name) {   
-    varnames = vector<string>({""}); // start from 1st position
-}
+CircuitRW::CircuitRW(std::istream& file): varnames({""}) // start from 1st position
+    { readQcir(file); } 
 
 const string& CircuitRW::varString(int i) const { 
     if (permutation.size()==0)

@@ -11,7 +11,8 @@ class CircuitRW : public Circuit {
         vector<string> varnames;                 // map identifiers to external names, start at 1
 
     public:
-        CircuitRW(const string& name);
+        CircuitRW(std::istream& file);
+
         const string& varString(int i) const;
 
         void readQcir(std::istream&);            // read from qcir file format

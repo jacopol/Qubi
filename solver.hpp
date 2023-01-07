@@ -18,7 +18,7 @@ class Solver {
         bool verdict() const;
 
     public:
-        Solver(const Circuit& circuit, const Sylvan_mgr& bdd);
+        Solver(const Circuit& circuit);
         bool solve();
         Valuation example() const; // can only be called after solve()
 };

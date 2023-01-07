@@ -1,3 +1,6 @@
+// (c) Jaco van de Pol
+// Aarhus University
+
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
