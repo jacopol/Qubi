@@ -6,6 +6,8 @@
 #include <assert.h>
 #include "circuit.hpp"
 #include "settings.hpp"
+#include "messages.hpp"
+#include <bitset>
 
 // default string when variable names are unknown
 const string& Circuit::varString(int i) const {
@@ -115,4 +117,37 @@ Circuit& Circuit::reorder() {
     reorder(output);
 
     return *this;
+}
+
+// todo: check #vars. Or: use vector<bool>?
+typedef std::bitset<96UL> varset;
+
+void Circuit::posneg() {
+    vector<varset> possets({varset()});
+    vector<varset> negsets({varset()});
+
+    // a variable occurs positively in itself
+    for (int i=1; i<maxVar(); i++) {
+        possets.push_back(varset().set(i));
+        negsets.push_back(varset());
+        LOG(2,"var " << i << " : " << possets[i] << std::endl);
+    }
+    // do gates
+    for (int i=maxVar(); i<maxGate(); i++) {
+        varset pos;
+        varset neg;
+        for (int lit : getGate(i).inputs) {
+            if (lit > 0) { 
+                pos |= possets[lit];
+                neg |= negsets[lit];
+            } else {
+                pos |= negsets[-lit];
+                neg |= possets[-lit];
+            }
+        }
+        possets.push_back(pos);
+        negsets.push_back(neg);
+        LOG(2, "pos " << i << " : " << possets[i] << std::endl);
+        LOG(2, "neg " << i << " : " << negsets[i] << std::endl);
+    }
 }

@@ -5,6 +5,7 @@ Extensions Input:
 
 Preprocessing:
 - remove (or skip) unused vars / gates (already detected)
+- eliminate pure positive/negative literals
 - early quantification (non-prenex)
 - transform back to prenex
 

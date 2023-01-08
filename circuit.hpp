@@ -75,6 +75,7 @@ class Circuit {
         Circuit& split();   // every block gets single quantifier
         Circuit& combine(); // blocks become strictly alternating
         Circuit& reorder(); // reorder by DFS pass
+        void posneg(); // for now, compute bitset of pos/neg variables per gate
 };
 
 #endif

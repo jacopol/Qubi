@@ -7,8 +7,10 @@
 #include "solver.hpp"
 #include "bdd_sylvan.hpp"
 #include "settings.hpp"
+#include "chrono"
 
 using namespace std;
+using namespace chrono;
 
 bool EXAMPLE    = false;
 bool PRINT      = false;
@@ -153,12 +155,14 @@ void report_result(const CircuitRW& qbf, bool verdict, const Valuation& valuatio
 }
 
 int main(int argc, char *argv[]) {
+    system_clock::time_point starttime = system_clock::now();
     parseArgs(argc, argv);
     CircuitRW qbf(*INFILE);
     if (VERBOSE>=1) qbf.printInfo(cerr);
     if (SPLIT) qbf.split();
     if (COMBINE) qbf.combine();
     if (REORDER) qbf.reorder();
+    // qbf.posneg(); // experimental
     if (PRINT) {
         qbf.writeQcir(cout);
     } else {
@@ -171,5 +175,7 @@ int main(int argc, char *argv[]) {
         } // Sylvan_mgr is closed before reporting the results
         report_result(qbf, verdict, valuation);
     }
+    auto timespent = duration_cast<milliseconds>(system_clock::now() - starttime);
+    LOG(1, "Total time spent: " << timespent.count() << " ms" << endl);
     return 0;
 }
