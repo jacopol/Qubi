@@ -55,42 +55,8 @@ Circuit& Circuit::combine() {
     return *this;
 }
 
-#include <iostream>
-Circuit& Circuit::reorder() {
-    LOG(1, "Reordering Variables" << std::endl)
-    int next=1;                                // next variable index to use
-    std::vector<int> reordering(maxVar());     // no indices are assigned yet
-    std::set<int> allvars; 
-    for (int i=1; i<maxGate(); i++)            // all vars/gates are yet unseen
-        allvars.insert(i);
-
-    // DFS search starting from output
-    // - remove vars/gates from allvars
-    // - add vars->next to reordering
-
-    vector<int> todo({abs(getOutput())});
-    while (todo.size()!=0) {
-        int v = todo.back(); todo.pop_back();
-        if (allvars.count(v)!=0) { // var/gate is now visited the first time
-            allvars.erase(v);
-            if (v<maxVar())
-                reordering[v] = next++;         // map variable v to next index
-            else
-                for (int x: getGate(v).inputs)  // visit all inputs of gate v
-                    todo.push_back(abs(x));
-        }
-    }
-
-    // Add unused variables to reordering 
-    LOG(2, "Unused variables/gates: ");
-    for (int x : allvars) {
-        LOG(2, varString(x) << ", "); // one , too much
-        if (x < maxVar()) 
-            reordering[x] = next++;
-    }
-    LOG(2, std::endl);
-    assert(next == maxVar());
-
+// Store and apply the reodering
+Circuit& Circuit::permute(std::vector<int>& reordering) {
     // Store the inverse permutation (to trace back original names)
     permutation = std::vector<int>(maxVar(),0);
     for (int i=1; i<maxVar(); i++)
@@ -119,6 +85,82 @@ Circuit& Circuit::reorder() {
     return *this;
 }
 
+Circuit& Circuit::reorderDfs() {
+    LOG(1, "Reordering Variables (Dfs)" << std::endl)
+    int next=1;                                // next variable index to use
+    std::vector<int> reordering(maxVar());     // no indices are assigned yet
+    std::set<int> allvars; 
+    for (int i=1; i<maxGate(); i++)            // all vars/gates are yet unseen
+        allvars.insert(i);
+
+    // DFS search starting from output
+    // - remove vars/gates from allvars
+    // - add vars->next to reordering
+
+    // Note: "todo" contains positive numbers only
+
+    vector<int> todo({abs(getOutput())});
+    while (todo.size()!=0) {
+        int v = todo.back(); todo.pop_back();
+        if (allvars.count(v)!=0) { // var/gate is now visited the first time
+            allvars.erase(v);
+            if (v < maxVar())
+                reordering[v] = next++;         // map variable v to next index
+            else
+                for (int x: getGate(v).inputs)  // visit all inputs of gate v
+                    todo.push_back(abs(x));
+        }
+    }
+
+    // Add unused variables to reordering 
+    LOG(2, "Unused variables/gates: ");
+    for (int x : allvars) {
+        LOG(2, varString(x) << ", "); // one , too much
+        if (x < maxVar()) 
+            reordering[x] = next++;
+    }
+    LOG(2, std::endl);
+    assert(next == maxVar());
+
+    return permute(reordering);
+}
+
+Circuit& Circuit::reorderMatrix() {
+    LOG(1, "Reordering Variables (Matrix)" << std::endl)
+    int next=1;                                // next variable index to use
+    std::vector<int> reordering(maxVar());     // no indices are assigned yet
+    std::set<int> allvars; 
+    for (int i=1; i<maxGate(); i++)            // all vars/gates are yet unseen
+        allvars.insert(i);
+
+    // Just proceed through the matrix
+    // - remove vars/gates from allvars
+    // - add vars->next to reordering
+
+    for (Gate g : matrix) {
+        for (int x : g.inputs) {
+            int v = abs(x);
+            if (allvars.count(v)!=0) { // seeing var/gate for the first time
+                allvars.erase(v);
+                if (v < maxVar())
+                    reordering[v] = next++;         // map variable v to next index
+            }
+        }
+    }
+
+    // Add unused variables to reordering 
+    LOG(2, "Unused variables/gates: ");
+    for (int x : allvars) {
+        LOG(2, varString(x) << ", "); // one , too much
+        if (x < maxVar()) 
+            reordering[x] = next++;
+    }
+    LOG(2, std::endl);
+    assert(next == maxVar());
+
+    return permute(reordering);
+}
+
 // todo: check #vars. Or: use vector<bool>?
 typedef std::bitset<96UL> varset;
 
@@ -136,6 +178,7 @@ void Circuit::posneg() {
     for (int i=maxVar(); i<maxGate(); i++) {
         varset pos;
         varset neg;
+        // this must change when we add xor and ite
         for (int lit : getGate(i).inputs) {
             if (lit > 0) { 
                 pos |= possets[lit];

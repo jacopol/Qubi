@@ -12,21 +12,31 @@
 using namespace std;
 using namespace chrono;
 
+enum Verbose {quiet, normal, verbose};
+enum Reorder {none, dfs, matrix};
+
+constexpr int DEFAULT_VERBOSE = normal;
+constexpr int DEFAULT_REORDER = dfs;
+constexpr int DEFAULT_WORKERS = 4;
+constexpr int DEFAULT_TABLE   = 30;
+
 bool EXAMPLE    = false;
 bool PRINT      = false;
 bool SPLIT      = false;
 bool COMBINE    = false;
-bool REORDER    = false;
+bool KEEPNAMES  = false;
+int REORDER     = DEFAULT_REORDER;
 int WORKERS     = DEFAULT_WORKERS;
 int TABLE       = DEFAULT_TABLE;
+int VERBOSE     = DEFAULT_VERBOSE;
 
 string NAME;
 istream* INFILE;
 
 void usage_short() {
     cout << "Usage:\n"
-         << "solve:\tqubi [-e] [-r] [-s | -c] [-t=n] [-w=n] [-v | -q ] [infile]\n"
-         << "print:\tqubi  -p  [-r] [-s | -c] [-k]          [-v | -q ] [infile]\n"
+         << "solve:\tqubi [-e] [-r=n] [-s | -c] [-t=n] [-w=n] [-v=n] [infile]\n"
+         << "print:\tqubi  -p  [-r=n] [-s | -c] [-k]          [-v=n] [infile]\n"
          << "help :\tqubi  -h"
          << endl;
 }
@@ -37,17 +47,17 @@ void usage() {
          << "Output:\t solving : [TRUE | FALSE] -- the solution of the QBF\n"
          << "    or:\t printing: the preprocessed QBF in QCIR format\n\n"
          << "Options:\n"
-         << "\t-e, -example: \t\tshow witness for outermost quantifiers\n"
+         << "\t-e, -example: \t\tsolve and show witness for outermost quantifiers\n"
          << "\t-p, -print: \t\tprint the (transformed) qbf to stdout\n"
-         << "\t-k, -keep: \t\tkeep the original gates/vars (or else: renumber)\n"
-         << "\t-r, -reorder: \t\ttransform: variable reordering based on DFS\n"
+         << "\t-k, -keep: \t\tkeep the original gate/var-names (or else: renumber)\n"
          << "\t-s, -split: \t\ttransform: split blocks in single quantifier\n"
          << "\t-c, -combine: \t\ttransform: combine blocks with same quantifier\n"
-         << "\t-t, -table=<n>: \tBDD: set max table size to 2^n (n>=17)\n"
-         << "\t-w, -workers=<n>: \tBDD: set number of worker threads to n\n"
-         << "\t-v, -verbose: \t\tverbose, show intermediate progress\n"
-         << "\t-q, -quiet: \t\tshow the output only\n"
+         << "\t-r, -reorder=<n>: \tvariable reordering: 0=none, 1=dfs (*), 2=matrix\n"
+         << "\t-t, -table=<n>: \tBDD: set max table size to 2^n, n in [15..42], 30=(*)\n"
+         << "\t-w, -workers=<n>: \tBDD: use n threads, n in [0..64], 0=#cores, 4=(*)\n"
+         << "\t-v, -verbose=<n>: \tverbose level (0=quiet, 1=normal (*), 2=verbose)\n"
          << "\t-h, -help: \t\tthis usage message\n"
+         << "\t(*) = default values"
          << endl;
 }
 
@@ -98,13 +108,12 @@ bool parseOption(string& arg) {
     if (arg == "-example" || arg == "-e") { EXAMPLE = true; return true; }
     if (arg == "-split"   || arg == "-s") { SPLIT   = true; return true; }
     if (arg == "-combine" || arg == "-c") { COMBINE = true; return true; }
-    if (arg == "-reorder" || arg == "-r") { REORDER = true; return true; }
     if (arg == "-print"   || arg == "-p") { PRINT   = true; return true; }
     if (arg == "-keep"    || arg == "-k") { KEEPNAMES = true; return true; }
-    if (arg == "-verbose" || arg == "-v") { VERBOSE = verbose; return true; }
-    if (arg == "-quiet"   || arg == "-q") { VERBOSE = quiet; return true; }
-    if (arg == "-workers" || arg == "-w") { WORKERS = checkInt(arg,val,1,64); return true; }
-    if (arg == "-table"   || arg == "-t") { TABLE   = checkInt(arg,val,17,32); return true; }
+    if (arg == "-reorder" || arg == "-r") { REORDER = checkInt(arg,val,0,2); return true; }
+    if (arg == "-verbose" || arg == "-v") { VERBOSE = checkInt(arg,val,0,2); return true; }
+    if (arg == "-workers" || arg == "-w") { WORKERS = checkInt(arg,val,0,64); return true; }
+    if (arg == "-table"   || arg == "-t") { TABLE   = checkInt(arg,val,15,42); return true; }
     if (arg == "-help"    || arg == "-h") { usage(); exit(1); }
     return false;
 }
@@ -161,7 +170,8 @@ int main(int argc, char *argv[]) {
     if (VERBOSE>=1) qbf.printInfo(cerr);
     if (SPLIT) qbf.split();
     if (COMBINE) qbf.combine();
-    if (REORDER) qbf.reorder();
+    if (REORDER==1) qbf.reorderDfs();
+    if (REORDER==2) qbf.reorderMatrix();
     // qbf.posneg(); // experimental
     if (PRINT) {
         qbf.writeQcir(cout);

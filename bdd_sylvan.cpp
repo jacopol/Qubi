@@ -15,8 +15,8 @@ Sylvan_mgr::Sylvan_mgr(int workers, int size) {
         << workers << " workers, table=2^" << size << ")" << std::endl);
     lace_start(workers, 0); // deque_size 0
     long long maxnodes = 1L << size; 
-    long long initnodes = maxnodes >> 8;
-    long long maxcache = maxnodes >> 4;
+    long long initnodes = maxnodes >> 6;
+    long long maxcache  = maxnodes >> 2;
     long long initcache = maxcache >> 4;
     sylvan_set_sizes(initnodes, maxnodes, initcache, maxcache);
     sylvan_init_package();

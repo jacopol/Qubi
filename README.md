@@ -4,11 +4,11 @@
 
 solving:
 
-    qubi [-e] [-r] [-s | -c] [-t=n] [-w=n] [-v | -q ] [infile]
+    qubi [-e] [-r=n] [-s | -c] [-t=n] [-w=n] [-v=n] [infile]
 
 printing:
 
-    qubi -p [-r] [-s | -c] [-k] [-v | -q ] [infile]
+    qubi -p [-r=n] [-s | -c] [-k] [-v=n] [infile]
 
 help:
 
@@ -22,17 +22,17 @@ _Output:_  solving:   [TRUE | FALSE] : the solution of the QBF + (counter)exampl
 
 ### Options:
 
-    -e, -example:       show witness for outermost quantifiers
-    -p, -print:         print the (transformed) qbf to stdout
-    -k, -keep:          keep the original gates/vars (or else: renumber)
-    -r, -reorder:       transform: variable reordering based on DFS
-    -s, -split:         transform: split blocks in single quantifier
-    -c, -combine:       transform: combine blocks with same quantifier
-    -t, -table=<n>:     BDD: set max table size to 2^n (n>=17)
-    -w, -workers=<n>:   BDD: set number of worker threads to n
-    -v, -verbose:       verbose, show intermediate progress
-    -q, -quiet:         show the output only
-    -h, -help:          this usage message
+    -e, -example:           solve and show witness for outermost quantifiers
+    -p, -print:             print the (transformed) qbf to stdout
+    -k, -keep:              keep the original gate/var-names (or else: renumber)
+    -s, -split:             transform: split blocks in single quantifier
+    -c, -combine:           transform: combine blocks with same quantifier
+    -r, -reorder=<n>:       variable reordering: 0=none, 1=dfs (*), 2=matrix
+    -t, -table=<n>:         BDD: set max table size to 2^n, n in [15..42], 30=(*)
+    -w, -workers=<n>:       BDD: use n threads, n in [0..64], 0=#cores, 4=(*)
+    -v, -verbose=<n>:       verbose level (0=quiet, 1=normal (*), 2=verbose)
+    -h, -help:              this usage message
+    (*) = default values
 
 ## Test:
 

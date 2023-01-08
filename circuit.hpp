@@ -44,38 +44,42 @@ public:
 };
 
 class Circuit {
-    protected:
-        int maxvar=1;               // next unused variable, start at 1
-        vector<int> permutation;    // permutation of variables (empty if identity)
+protected:
+    int maxvar=1;               // next unused variable, start at 1
+    vector<int> permutation;    // permutation of variables (empty if identity)
 
-    private:
-        vector<Block> prefix;
-        vector<Gate> matrix;        // gate definitions (shifted by -maxvar)
-        int output;                 // output gate
+private:
+    vector<Block> prefix;
+    vector<Gate> matrix;        // gate definitions (shifted by -maxvar)
+    int output;                 // output gate
 
-    public:
-        int maxVar() const                  { return maxvar; }
-        int maxBlock() const                { return prefix.size(); }
-        int maxGate() const                 { return matrix.size() + maxvar; }
+public:
+    int maxVar() const                  { return maxvar; }
+    int maxBlock() const                { return prefix.size(); }
+    int maxGate() const                 { return matrix.size() + maxvar; }
 
-        const Block& getBlock(int i) const  { return prefix.at(i); }
-        void addBlock(const Block& b)       { prefix.push_back(b); }
+    const Block& getBlock(int i) const  { return prefix.at(i); }
+    void addBlock(const Block& b)       { prefix.push_back(b); }
 
-        const Gate& getGate(int i) const    { return matrix.at(i - maxvar); }
-        void addGate(const Gate& g)         { matrix.push_back(g); }
-        
-        int getOutput() const               { return output; }
-        void setOutput(int out)             { output = out; }
+    const Gate& getGate(int i) const    { return matrix.at(i - maxvar); }
+    void addGate(const Gate& g)         { matrix.push_back(g); }
+    
+    int getOutput() const               { return output; }
+    void setOutput(int out)             { output = out; }
 
-        virtual const string& varString(int i) const;
-        void printInfo(std::ostream& s) const;
+    virtual const string& varString(int i) const;
+    void printInfo(std::ostream& s) const;
 
-    // Transformations
+// Transformations
 
-        Circuit& split();   // every block gets single quantifier
-        Circuit& combine(); // blocks become strictly alternating
-        Circuit& reorder(); // reorder by DFS pass
-        void posneg(); // for now, compute bitset of pos/neg variables per gate
+    Circuit& split();           // every block gets single quantifier
+    Circuit& combine();         // blocks become strictly alternating
+    Circuit& reorderDfs();      // reorder by order of appearance in DFS pass
+    Circuit& reorderMatrix();   // reorder by order of appearance in matrix
+    void posneg(); // for now, compute bitset of pos/neg variables per gate
+
+private:
+    Circuit& permute(std::vector<int>& reordering); // store and apply reordering
 };
 
 #endif

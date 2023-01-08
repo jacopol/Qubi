@@ -32,3 +32,4 @@ Suggestions for Sylvan:
 - VariablesCube: also when not sorted!
 - sylvan_quite vs quitPackage (in example)
 - why is Sylvan a class? Should be sylvan_mgr? Singleton pattern?
+- ask lace for number of workers? (in case initialized with 0)

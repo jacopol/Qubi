@@ -15,7 +15,7 @@ class Sylvan_mgr {
 // This is currently not enforced.
 
 public:
-    Sylvan_mgr(int workers=DEFAULT_WORKERS, int table=DEFAULT_TABLE);
+    Sylvan_mgr(int workers=0, int table=30);
     ~Sylvan_mgr();
 };
 
