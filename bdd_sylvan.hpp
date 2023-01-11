@@ -50,6 +50,12 @@ public:
     Sylvan_Bdd ExistAbstract(const std::vector<int>& variables) const;
     std::vector<bool> PickOneCube(const std::vector<int>& variables) const;
 
+/* folding operations */
+
+    static Sylvan_Bdd bigAnd(const std::vector<Sylvan_Bdd>&);
+    static Sylvan_Bdd bigOr(const std::vector<Sylvan_Bdd>&);
+
+
 private:
 
     sylvan::Bdd bdd;

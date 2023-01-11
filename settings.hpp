@@ -9,6 +9,7 @@
 // global variables, defined in main program qubi.cpp
 
 extern int VERBOSE;
+extern int FOLDING;
 extern bool KEEPNAMES;
 
 #define LOG(level, msg) { if (level<=VERBOSE) {std::cerr << msg; }}

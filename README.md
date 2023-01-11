@@ -4,7 +4,7 @@
 
 solving:
 
-    qubi [-e] [-r=n] [-s | -c] [-t=n] [-w=n] [-v=n] [infile]
+    qubi [-e] [-r=n] [-s | -c] [-f=n] [-t=n] [-w=n] [-v=n] [infile]
 
 printing:
 
@@ -27,6 +27,7 @@ _Output:_  solving:   [TRUE | FALSE] : the solution of the QBF + (counter)exampl
     -k, -keep:              keep the original gate/var-names (or else: renumber)
     -s, -split:             transform: split blocks in single quantifier
     -c, -combine:           transform: combine blocks with same quantifier
+    -f, -fold=<n>:          evaluate and/or: 0=left-to-right, 1=pairwise (*)
     -r, -reorder=<n>:       variable reordering: 0=none, 1=dfs (*), 2=matrix
     -t, -table=<n>:         BDD: set max table size to 2^n, n in [15..42], 30=(*)
     -w, -workers=<n>:       BDD: use n threads, n in [0..64], 0=#cores, 4=(*)
@@ -36,8 +37,13 @@ _Output:_  solving:   [TRUE | FALSE] : the solution of the QBF + (counter)exampl
 
 ## Test:
 
+Solving (with example generation, and verbose)
+
+    ./qubi -e -v=2 Test/qbf3.qcir
+
+Preprocessing (combining quantifiers, and keep original names)
+
     ./qubi -p -c -k Test/qbf3.qcir
-    ./qubi -e -v Test/qbf3.qcir
 
 ## Current Limitations:
 
@@ -53,7 +59,7 @@ _Output:_  solving:   [TRUE | FALSE] : the solution of the QBF + (counter)exampl
 ## Dependencies:
 
 Sylvan -- Multi-core BDD package
-- install from https://github.com/trolando/sylvan
+- install from https://github.com/utwente-fmt/sylvan
 - make sure that sylvan.h and sylvan.a can be found by g++
 
 ## Author:

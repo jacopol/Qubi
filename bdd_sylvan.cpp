@@ -2,6 +2,7 @@
 // Aarhus University
 
 #include <vector>
+#include <deque>
 #include <algorithm>
 
 #include "bdd_sylvan.hpp"
@@ -77,4 +78,79 @@ std::vector<bool> Sylvan_Bdd::PickOneCube(const std::vector<int>& vars) const {
         val2[index[i]] = val1[i];
 
     return val2;
+}
+
+// TODO: could use parallel reduce (TASKS)
+// TODO: maybe use vector<std::reference_wrapper<Sylvan_Bdd>>? (Looks ugly)
+
+
+Sylvan_Bdd bigAnd_left2right(const std::vector<Sylvan_Bdd>& args);
+Sylvan_Bdd bigOr_left2right(const std::vector<Sylvan_Bdd>& args);
+Sylvan_Bdd bigAnd_pairwise(const std::vector<Sylvan_Bdd>& args);
+Sylvan_Bdd bigOr_pairwise(const std::vector<Sylvan_Bdd>& args);
+
+
+Sylvan_Bdd Sylvan_Bdd::bigAnd(const std::vector<Sylvan_Bdd>& args) {
+    if (FOLDING == 0) return bigAnd_left2right(args);
+    if (FOLDING == 1) return bigAnd_pairwise(args);
+    std::cerr << "Internal error: FOLDING value" << FOLDING << std::endl;
+    exit(-1);
+}
+
+Sylvan_Bdd Sylvan_Bdd::bigOr(const std::vector<Sylvan_Bdd>& args) {
+    if (FOLDING == 0) return bigOr_left2right(args);
+    if (FOLDING == 1) return bigOr_pairwise(args);
+    std::cerr << "Internal error: FOLDING value" << FOLDING << std::endl;
+    exit(-1);
+}
+
+Sylvan_Bdd bigAnd_left2right(const std::vector<Sylvan_Bdd>& args) {
+    Sylvan_Bdd bdd = Sylvan_Bdd(true); // neutral element
+    for (Sylvan_Bdd arg: args) {
+        LOG(2,".");
+        bdd *= arg;
+    }
+    return bdd;
+}
+
+Sylvan_Bdd bigOr_left2right(const std::vector<Sylvan_Bdd>& args) {
+    Sylvan_Bdd bdd = Sylvan_Bdd(false); // neutral element
+    for (Sylvan_Bdd arg: args) {
+        LOG(2,".");
+        bdd += arg;
+    }
+    return bdd;
+}
+
+
+/* Alternative implementation: combine BDDs pairwise, etc. (map/reduce) */
+
+Sylvan_Bdd bigAnd_pairwise(const std::vector<Sylvan_Bdd>& args) {
+    Sylvan_Bdd bdd = Sylvan_Bdd(true); // neutral element
+    if (args.size() == 0)
+        return bdd;
+    std::deque<Sylvan_Bdd> todo(args.begin(), args.end());
+    while (todo.size() > 1) {
+        LOG(2,".");
+        Sylvan_Bdd arg1 = todo.front(); todo.pop_front();
+        Sylvan_Bdd arg2 = todo.front(); todo.pop_front();
+        arg1 *= arg2;
+        todo.push_back(arg1);
+    }
+    return todo[0];
+}
+
+Sylvan_Bdd bigOr_pairwise(const std::vector<Sylvan_Bdd>& args) {
+    Sylvan_Bdd bdd = Sylvan_Bdd(false); // neutral element
+    if (args.size() == 0)
+        return bdd;
+    std::deque<Sylvan_Bdd> todo(args.begin(), args.end());
+    while (todo.size() > 1) {
+        LOG(2,".");
+        Sylvan_Bdd arg1 = todo.front(); todo.pop_front();
+        Sylvan_Bdd arg2 = todo.front(); todo.pop_front();
+        arg1 += arg2;
+        todo.push_back(arg1);
+    }
+    return todo[0];
 }

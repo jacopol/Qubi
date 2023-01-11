@@ -5,12 +5,13 @@ Extensions Input:
 
 Preprocessing:
 - remove (or skip) unused vars / gates (already detected)
+- flatten and/or gates
 - eliminate pure positive/negative literals
-- early quantification (non-prenex)
-- transform back to prenex
+- early quantification (non-prenex): push quantifiers inside
+- print/parse non-prenex (?)
+- transform back to prenex (partially or completely)
 
 Solving:
-- use pairwise disjunction/conjunction
 - use parallel disjunction/conjunction
 
 Improvements:
@@ -33,3 +34,4 @@ Suggestions for Sylvan:
 - sylvan_quite vs quitPackage (in example)
 - why is Sylvan a class? Should be sylvan_mgr? Singleton pattern?
 - ask lace for number of workers? (in case initialized with 0)
+- make install target is broken on trolando, works on utwente-fmt

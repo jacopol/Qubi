@@ -72,18 +72,13 @@ void Solver::matrix2bdd() {
     }
     LOG(1,"Building BDD for Matrix" << endl;);
     for (int i=c.maxVar(); i<=abs(c.getOutput());i++) {
-        LOG(2,"- gate " << c.varString(i));
+        LOG(2,"- gate " << c.varString(i) << ": ");
         Gate g = c.getGate(i);
-        bool isAnd = g.output==And;
-        // Build a conjunction or disjunction:
-        Sylvan_Bdd bdd = Sylvan_Bdd(isAnd); // neutral element
-        for (int arg: g.inputs) {
-            LOG(2,".");
-            if (isAnd)
-                bdd *= toBdd(arg);  // conjunction
-            else
-                bdd += toBdd(arg);  // disjunction
-            }
+        LOG(2, Ctext[g.output] << "(" << g.inputs.size() << ")")
+        vector<Sylvan_Bdd> args;
+        for (int arg: g.inputs) args.push_back(toBdd(arg));
+        Sylvan_Bdd bdd(false);
+        bdd = (g.output == And ? Sylvan_Bdd::bigAnd(args) : Sylvan_Bdd::bigOr(args));
         LOG(2," (" << bdd.NodeCount() << " nodes)" << endl);
         bdds.push_back(bdd);
     }
