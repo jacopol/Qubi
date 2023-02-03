@@ -27,6 +27,7 @@ bool PRINT      = false;
 bool SPLIT      = false;
 bool COMBINE    = false;
 bool KEEPNAMES  = false;
+bool GARBAGE    = false;
 int FOLDING     = DEFAULT_FOLD;
 int REORDER     = DEFAULT_REORDER;
 int WORKERS     = DEFAULT_WORKERS;
@@ -38,7 +39,7 @@ istream* INFILE;
 
 void usage_short() {
     cout << "Usage:\n"
-         << "solve:\tqubi [-e] [-r=n] [-s | -c] [-f=n] [-t=n] [-w=n] [-v=n] [infile]\n"
+         << "solve:\tqubi [-e] [-r=n] [-s | -c] [-g] [-f=n] [-t=n] [-w=n] [-v=n] [infile]\n"
          << "print:\tqubi  -p  [-r=n] [-s | -c] [-k] [-v=n] [infile]\n"
          << "help :\tqubi  -h"
          << endl;
@@ -57,6 +58,7 @@ void usage() {
          << "\t-c, -combine: \t\ttransform: combine blocks with same quantifier\n"
          << "\t-r, -reorder=<n>: \tvariable reordering: 0=none, 1=dfs (*), 2=matrix\n"
          << "\t-f, -fold=<n>: \tevaluate and/or: 0=left-to-right, 1=pairwise (*)\n"
+         << "\t-g, -gc: \tswitch on garbage collection (experimental)\n"
          << "\t-t, -table=<n>: \tBDD: set max table size to 2^n, n in [15..42], 30=(*)\n"
          << "\t-w, -workers=<n>: \tBDD: use n threads, n in [0..64], 0=#cores, 4=(*)\n"
          << "\t-v, -verbose=<n>: \tverbose level (0=quiet, 1=normal (*), 2=verbose)\n"
@@ -116,6 +118,7 @@ bool parseOption(string& arg) {
     if (arg == "-keep"    || arg == "-k") { KEEPNAMES = true; return true; }
     if (arg == "-fold"    || arg == "-f") { FOLDING = checkInt(arg,val,0,1); return true; }
     if (arg == "-reorder" || arg == "-r") { REORDER = checkInt(arg,val,0,2); return true; }
+    if (arg == "-gc"      || arg == "-g") { GARBAGE = true; return true; }
     if (arg == "-verbose" || arg == "-v") { VERBOSE = checkInt(arg,val,0,2); return true; }
     if (arg == "-workers" || arg == "-w") { WORKERS = checkInt(arg,val,0,64); return true; }
     if (arg == "-table"   || arg == "-t") { TABLE   = checkInt(arg,val,15,42); return true; }

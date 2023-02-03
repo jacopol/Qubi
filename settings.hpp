@@ -11,6 +11,7 @@
 extern int VERBOSE;
 extern int FOLDING;
 extern bool KEEPNAMES;
+extern bool GARBAGE;
 
 #define LOG(level, msg) { if (level<=VERBOSE) {std::cerr << msg; }}
 

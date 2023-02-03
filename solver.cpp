@@ -59,6 +59,27 @@ Valuation Solver::example() const {
     }
 }
 
+// compute the last use of each bdd and store in cleanup
+
+void Solver::computeCleanup() {
+        std::set<int> cleaned;
+        for (int i=c.maxVar(); i<=abs(c.getOutput()); i++) {
+            cleanup.push_back(std::set<int>());
+        }
+
+        for (int i=abs(c.getOutput()); i>=c.maxVar(); i--) {
+            Gate g = c.getGate(i);
+            for (int arg: g.inputs) {
+                arg = abs(arg);
+                if (arg>=c.maxVar() && cleaned.count(arg)==0) { //this is the last time arg is going to be used
+                    cleanup[i-c.maxVar()].insert(arg);
+                    cleaned.insert(arg);
+                }
+            }
+        }
+}
+
+
 void Solver::matrix2bdd() {
     vector<Sylvan_Bdd> bdds({Sylvan_Bdd(false)}); // lookup table previous BDDs, start at 1
     auto toBdd = [&bdds](int i)->Sylvan_Bdd {     // negate (if necessary) and look up Bdd
@@ -71,7 +92,8 @@ void Solver::matrix2bdd() {
         bdds.push_back(Sylvan_Bdd(i));
     }
     LOG(1,"Building BDD for Matrix" << endl;);
-    for (int i=c.maxVar(); i<=abs(c.getOutput());i++) {
+    if (GARBAGE) computeCleanup();
+    for (int i=c.maxVar(); i<=abs(c.getOutput()); i++) {
         LOG(2,"- gate " << c.varString(i) << ": ");
         Gate g = c.getGate(i);
         LOG(2, Ctext[g.output] << "(" << g.inputs.size() << ")")
@@ -81,6 +103,15 @@ void Solver::matrix2bdd() {
         bdd = (g.output == And ? Sylvan_Bdd::bigAnd(args) : Sylvan_Bdd::bigOr(args));
         LOG(2," (" << bdd.NodeCount() << " nodes)" << endl);
         bdds.push_back(bdd);
+
+        if (GARBAGE) {
+            LOG(2, "          Cleaning: ");
+            for (int j : cleanup[i-c.maxVar()]) { // Do the cleanup
+                bdds[j] = Sylvan_Bdd(false);
+                LOG(2, j << ", ")
+            }
+            LOG(2,"\n");
+        }
     }
     matrix = toBdd(c.getOutput()); // final result
 }

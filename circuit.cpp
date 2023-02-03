@@ -35,7 +35,7 @@ Circuit& Circuit::split() {
 }
 
 Circuit& Circuit::combine() {
-    LOG(1, "Combining Quantifiers" << std::endl)
+    LOG(1, "Combining Quantifiers" << std::endl);
     if (maxBlock() == 0) return *this;
     vector<Block> oldprefix = prefix;
     prefix = vector<Block>();

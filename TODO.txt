@@ -35,3 +35,13 @@ Suggestions for Sylvan:
 - why is Sylvan a class? Should be sylvan_mgr? Singleton pattern?
 - ask lace for number of workers? (in case initialized with 0)
 - make install target is broken on trolando, works on utwente-fmt
+
+Challenges:
+- Domineering/4x6_12_bwnib.qcir
+- Domineering/5x5_13_bnwib.qcir
+- HTTT/4x4_11_knobby_bwnib.qcir
+- HTTT/4x4_13_skinny_bwnib.qcir
+- HTTT/4x4_15_fatty_bwnib.qcir
+- Breakthrough/2x5_17_bwnib.qcir (matrix)
+- Breakthrough/3x5_11_bwnib.qcir (prefix)
+- Connect4/5x5_9_connect4_bwnib.qcir
