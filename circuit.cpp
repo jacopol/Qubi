@@ -107,8 +107,12 @@ Circuit& Circuit::reorderDfs() {
             if (v < maxVar())
                 reordering[v] = next++;         // map variable v to next index
             else
-                for (int x: getGate(v).inputs)  // visit all inputs of gate v
-                    todo.push_back(abs(x));
+//                for (int x: getGate(v).inputs)  // visit all inputs of gate v
+//                    todo.push_back(abs(x));
+            { const vector<int>& inputs = getGate(v).inputs;
+              for (int i=inputs.size()-1; i>=0; i--)  // visit all inputs of gate v
+                    todo.push_back(abs(inputs[i]));
+            }
         }
     }
 
