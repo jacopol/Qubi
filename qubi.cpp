@@ -14,33 +14,37 @@ using namespace chrono;
 
 enum Verbose {quiet, normal, verbose};
 enum Reorder {none, dfs, matrix};
-enum Fold {left2right, pairwise};
+enum Iterate {left2right, pairwise};
+enum QBlocks {keep, split, combine};
 
 constexpr int DEFAULT_VERBOSE = normal;
 constexpr int DEFAULT_REORDER = dfs;
-constexpr int DEFAULT_FOLD = pairwise;
+constexpr int DEFAULT_ITERATE = pairwise;
+constexpr int DEFAULT_QUANTBLOCKS = keep;
 constexpr int DEFAULT_WORKERS = 4;
 constexpr int DEFAULT_TABLE   = 30;
 
 bool EXAMPLE    = false;
 bool PRINT      = false;
-bool SPLIT      = false;
-bool COMBINE    = false;
 bool KEEPNAMES  = false;
 bool GARBAGE    = false;
-int FOLDING     = DEFAULT_FOLD;
+bool FLATTEN    = false;
+bool CLEANUP    = false;
+int ITERATE     = DEFAULT_ITERATE;
 int REORDER     = DEFAULT_REORDER;
+int QUANTBLOCKS = DEFAULT_QUANTBLOCKS;
 int WORKERS     = DEFAULT_WORKERS;
 int TABLE       = DEFAULT_TABLE;
 int VERBOSE     = DEFAULT_VERBOSE;
 
-string NAME;
+string NAME; // = "Test/sat13.qcir"; // for debugging
+
 istream* INFILE;
 
 void usage_short() {
     cout << "Usage:\n"
-         << "solve:\tqubi [-e] [-r=n] [-s | -c] [-g] [-f=n] [-t=n] [-w=n] [-v=n] [infile]\n"
-         << "print:\tqubi  -p  [-r=n] [-s | -c] [-k] [-v=n] [infile]\n"
+         << "solve:\tqubi [-e] [-r=n] [-q=n] [-f] [-c] [-i=n] [-g] [-t=n] [-w=n] [-v=n] [infile]\n"
+         << "print:\tqubi  -p  [-r=n] [-q=n] [-f] [-c] [-k] [-v=n] [infile]\n"
          << "help :\tqubi  -h"
          << endl;
 }
@@ -54,11 +58,12 @@ void usage() {
          << "\t-e, -example: \t\tsolve and show witness for outermost quantifiers\n"
          << "\t-p, -print: \t\tprint the (transformed) qbf to stdout\n"
          << "\t-k, -keep: \t\tkeep the original gate/var-names (or else: renumber)\n"
-         << "\t-s, -split: \t\ttransform: split blocks in single quantifier\n"
-         << "\t-c, -combine: \t\ttransform: combine blocks with same quantifier\n"
+         << "\t-f, -flatten: \t\tflattening transformation on and/or subcircuits\n"
+         << "\t-c, -cleanup: \t\tremove unused variable and gate names\n"
+         << "\t-q, -quant=<n>: \tquantifier block transformation: 0=keep (*), 1=split, 2=combine\n"
          << "\t-r, -reorder=<n>: \tvariable reordering: 0=none, 1=dfs (*), 2=matrix\n"
-         << "\t-f, -fold=<n>: \tevaluate and/or: 0=left-to-right, 1=pairwise (*)\n"
-         << "\t-g, -gc: \tswitch on garbage collection (experimental)\n"
+         << "\t-i, -iterate=<n>: \tevaluate and/or: 0=left-to-right, 1=pairwise (*)\n"
+         << "\t-g, -gc: \t\tswitch on garbage collection (experimental)\n"
          << "\t-t, -table=<n>: \tBDD: set max table size to 2^n, n in [15..42], 30=(*)\n"
          << "\t-w, -workers=<n>: \tBDD: use n threads, n in [0..64], 0=#cores, 4=(*)\n"
          << "\t-v, -verbose=<n>: \tverbose level (0=quiet, 1=normal (*), 2=verbose)\n"
@@ -70,7 +75,6 @@ void usage() {
 istream* openInput(string& filename) {
     if (filename == "") {
         filename = "stdin";
-        // return openInput("Test/qbf3.qcir"); // for debugging
         return &cin;
     }
     else {
@@ -112,11 +116,12 @@ int checkInt(string& arg, string& val, int low, int high) {
 bool parseOption(string& arg) {
     string val = getArgument(arg);
     if (arg == "-example" || arg == "-e") { EXAMPLE = true; return true; }
-    if (arg == "-split"   || arg == "-s") { SPLIT   = true; return true; }
-    if (arg == "-combine" || arg == "-c") { COMBINE = true; return true; }
     if (arg == "-print"   || arg == "-p") { PRINT   = true; return true; }
     if (arg == "-keep"    || arg == "-k") { KEEPNAMES = true; return true; }
-    if (arg == "-fold"    || arg == "-f") { FOLDING = checkInt(arg,val,0,1); return true; }
+    if (arg == "-flatten" || arg == "-f") { FLATTEN = true; return true; }
+    if (arg == "-cleanup" || arg == "-c") { CLEANUP = true; return true; }
+    if (arg == "-quant"   || arg == "-q") { QUANTBLOCKS = checkInt(arg,val,0,2); return true; }
+    if (arg == "-iterate" || arg == "-i") { ITERATE = checkInt(arg,val,0,1); return true; }
     if (arg == "-reorder" || arg == "-r") { REORDER = checkInt(arg,val,0,2); return true; }
     if (arg == "-gc"      || arg == "-g") { GARBAGE = true; return true; }
     if (arg == "-verbose" || arg == "-v") { VERBOSE = checkInt(arg,val,0,2); return true; }
@@ -136,11 +141,6 @@ void parseArgs(int argc, char* argv[]) {
             continue;
         }
         LOG(0, "Error: Couldn't parse argument \"" << argv[i] << "\"" << endl);
-        usage_short(); exit(-1);
-    }
-
-    if (SPLIT && COMBINE) {
-        LOG(0, "Error: -s(plit) and -c(ombine) are inconsistent" << endl);
         usage_short(); exit(-1);
     }
 
@@ -176,10 +176,13 @@ int main(int argc, char *argv[]) {
     parseArgs(argc, argv);
     CircuitRW qbf(*INFILE);
     if (VERBOSE>=1) qbf.printInfo(cerr);
-    if (SPLIT) qbf.split();
-    if (COMBINE) qbf.combine();
-    if (REORDER==1) qbf.reorderDfs();
-    if (REORDER==2) qbf.reorderMatrix();
+    if (QUANTBLOCKS==split) qbf.split();
+    if (QUANTBLOCKS==combine) qbf.combine();
+    if (FLATTEN) qbf.flatten();
+    if (CLEANUP) qbf.cleanup();
+    if (REORDER==dfs) qbf.reorderDfs();
+    if (REORDER==matrix) qbf.reorderMatrix();
+    if (VERBOSE>=1) qbf.printInfo(cerr);
     // qbf.posneg(); // experimental
     if (PRINT) {
         qbf.writeQcir(cout);

@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <map>
+#include <set>
 #include <array>
 #include <string>
 
@@ -74,12 +75,17 @@ public:
 
     Circuit& split();           // every block gets single quantifier
     Circuit& combine();         // blocks become strictly alternating
+    Circuit& flatten();         // flatten and/or gates (and/or become alternating)
+    Circuit& cleanup();         // remove unused variables / gates
     Circuit& reorderDfs();      // reorder by order of appearance in DFS pass
     Circuit& reorderMatrix();   // reorder by order of appearance in matrix
     void posneg(); // for now, compute bitset of pos/neg variables per gate
 
 private:
     Circuit& permute(std::vector<int>& reordering); // store and apply reordering
+    void flatten_rec(int gate);
+    void gather(int gate, int sign, vector<int>& args); // gather args with same connective 
+    void mark(int gate, std::set<int>& mark); // mark all reachable variables and gates from gate
 };
 
 #endif

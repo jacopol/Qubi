@@ -12,13 +12,16 @@
 
 using namespace std;
 
-CircuitRW::CircuitRW(std::istream& file): varnames({""}) // start from 1st position
-    { readQcir(file); } 
+CircuitRW::CircuitRW(std::istream& file): varnames({""}) { // start from 1st position
+    readQcir(file);
+    // initialize permutation
+    permutation.resize(maxGate());
+    for (int i=0; i<maxGate(); i++)
+        permutation[i] = i;
+}
 
 const string& CircuitRW::varString(int i) const { 
-    if (permutation.size()==0)
-        return varnames.at(i); 
-    else if (abs(i) >= maxVar())
+    if (abs(i) >= permutation.size())
         return varnames.at(i); 
     else 
         return varnames.at(permutation[i]);

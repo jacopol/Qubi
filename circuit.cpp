@@ -55,16 +55,128 @@ Circuit& Circuit::combine() {
     return *this;
 }
 
-// Store and apply the reodering
+Connective dual(Connective c) {
+    if (c == And)
+        return Or;
+    if (c == Or)
+        return And;
+    assert(false);
+}
+
+// Gather all args under gate with the same connective modulo duality;
+// keep track of pos/neg sign
+void Circuit::gather(int gate, int sign, vector<int>& args) {
+    Gate g = getGate(gate);
+    assert(g.output == And || g.output == Or);
+    for (int arg : g.inputs) {
+        if (abs(arg) < maxvar) {
+            args.push_back(arg * sign);
+        }
+        else {
+            Connective child = getGate(abs(arg)).output;
+            if (arg > 0 && child == g.output)
+                gather(arg, sign, args);
+            else if (arg < 0 && child == dual(g.output)) 
+                gather(-arg, -sign, args);
+            else 
+                args.push_back(arg * sign);
+        }
+    }
+}
+
+// Flatten and/or starting in matrix, starting from gate. 
+// This operation proceeds recursively, and completely in-situ.
+// Note: after this operation, the matrix may have unused gates
+
+void Circuit::flatten_rec(int gate) {
+    assert(gate>0);
+    if (gate >= maxVar()) {
+        vector<int> newgates;
+        Gate &g = matrix[gate-maxvar]; // cannot use getGate since we will update g
+        gather(gate, 1, newgates);
+        g.inputs = newgates;
+        for (int arg : newgates) flatten_rec(abs(arg));
+    }
+}
+
+Circuit& Circuit::flatten() {
+    LOG(1, "Flattening Gates" << std::endl);
+    flatten_rec(abs(output));
+    return *this;
+}
+
+void Circuit::mark(int gate, std::set<int>& marking) { 
+    assert(gate>0);
+    marking.insert(gate);
+    if (gate >= maxvar) 
+        for (int arg : getGate(gate).inputs)
+            mark(abs(arg), marking);
+}
+
+Circuit& Circuit::cleanup() {
+    LOG(1, "Cleaning up Variables and Gates" << std::endl);
+    std::set<int> marking;
+    mark(abs(output), marking);
+    std::vector<int> reordering(maxGate(),0);
+    
+    LOG(2, "...Removed Variables: ");
+    int index=1; // new variable/gate-index
+
+    int i=1; // old variables / gates-index
+    vector<Block> newprefix;
+    for (Block &b : prefix) {
+        vector<int> newblock;
+        for (int &x : b.variables) {
+            if (marking.count(i)>0) {
+                newblock.push_back(x);
+                reordering[i] = index++;
+            }
+            else LOG(2, varString(x) << ", ");
+            i++;
+        }
+        b.variables = newblock;
+        if (newblock.size()>0) newprefix.push_back(b);
+    }
+
+    int newmaxvar = index;
+
+    LOG(2, "\n...Removed Gates: ");
+
+    vector<Gate> newmatrix;
+    for (Gate &g : matrix) {
+        if (marking.count(i)>0) {
+            newmatrix.push_back(g);
+            reordering[i] = index++;
+        }
+        else LOG(2, varString(i) << ", ");
+        i++;
+    }
+    LOG(2, "\n");
+
+    maxvar = newmaxvar;
+    prefix = newprefix;
+    matrix = newmatrix;
+
+    permute(reordering); // update all indices
+
+    return *this;
+}
+
+// Apply the reordering and store its inverse
+// The reordering applies to variables and possibly to gates
 Circuit& Circuit::permute(std::vector<int>& reordering) {
     // Store the inverse permutation (to trace back original names)
-    permutation = std::vector<int>(maxVar(),0);
-    for (int i=1; i<maxVar(); i++)
-        permutation[reordering[i]] = i;
+
+    // compose inverse of reordering with previous permutation
+    {
+    vector<int> oldperm(permutation);
+    for (int i=0; i<reordering.size(); i++)
+        permutation[reordering[i]] = oldperm[i];
+    }
 
     // Apply the reordering ...
     const auto reorder = [&](int& x) {
-        if (abs(x) < maxVar()) {
+        if (abs(x) < reordering.size()) {
             if (x > 0) 
                 x = reordering[x];
             else
@@ -88,7 +200,7 @@ Circuit& Circuit::permute(std::vector<int>& reordering) {
 Circuit& Circuit::reorderDfs() {
     LOG(1, "Reordering Variables (Dfs)" << std::endl)
     int next=1;                                // next variable index to use
-    std::vector<int> reordering(maxVar());     // no indices are assigned yet
+    std::vector<int> reordering(maxVar(),0);   // no indices are assigned yet
     std::set<int> allvars; 
     for (int i=1; i<maxGate(); i++)            // all vars/gates are yet unseen
         allvars.insert(i);
@@ -117,7 +229,7 @@ Circuit& Circuit::reorderDfs() {
     }
 
     // Add unused variables to reordering 
-    LOG(2, "Unused variables/gates: ");
+    LOG(2, "...Unused variables/gates: ");
     for (int x : allvars) {
         LOG(2, varString(x) << ", "); // one , too much
         if (x < maxVar()) 
@@ -153,7 +265,7 @@ Circuit& Circuit::reorderMatrix() {
     }
 
     // Add unused variables to reordering 
-    LOG(2, "Unused variables/gates: ");
+    LOG(2, "...Unused variables/gates: ");
     for (int x : allvars) {
         LOG(2, varString(x) << ", "); // one , too much
         if (x < maxVar()) 

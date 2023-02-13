@@ -9,7 +9,7 @@
 // global variables, defined in main program qubi.cpp
 
 extern int VERBOSE;
-extern int FOLDING;
+extern int ITERATE;
 extern bool KEEPNAMES;
 extern bool GARBAGE;
 

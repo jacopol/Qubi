@@ -4,8 +4,6 @@ Extensions Input:
 - allow free variables  (doable)
 
 Preprocessing:
-- remove (or skip) unused vars / gates (already detected)
-- flatten and/or gates
 - eliminate pure positive/negative literals
 - early quantification (non-prenex): push quantifiers inside
 - print/parse non-prenex (?)
@@ -16,7 +14,10 @@ Solving:
 
 Improvements:
 - statistics: timing
-- statistics: print peak BDD
+- statistics: keep and print peak BDD
+- statistics: compute peak BDD during large and/or
+- take care of removed variables in returned example
+- print original gate name with -k (extend permutation)
 
 Refactor:
 - refactor: Solver could be an abstract class / interface
@@ -37,11 +38,20 @@ Suggestions for Sylvan:
 - make install target is broken on trolando, works on utwente-fmt
 
 Challenges:
-- Domineering/4x6_12_bwnib.qcir
-- Domineering/5x5_13_bnwib.qcir
-- HTTT/4x4_11_knobby_bwnib.qcir
+- Breakthrough: all solved
+- Connect4: all solved
+- BSP: all solved
+
+- Domineering/5x6_11_bnwib.qcir
 - HTTT/4x4_13_skinny_bwnib.qcir
-- HTTT/4x4_15_fatty_bwnib.qcir
-- Breakthrough/2x5_17_bwnib.qcir (matrix)
-- Breakthrough/3x5_11_bwnib.qcir (prefix)
-- Connect4/5x5_9_connect4_bwnib.qcir
+- EP/8x8_11_e-8-1_p-2-3_bwnib.qcir
+- EP-dual/
+- Hex/hein_02_5x5-11_bwnib.qcir
+- Hex/hein_02_5x5-13_bwnib.qcir
+- Hex/hein_10_5x5-11_bwnib.qcir
+- Hex/hein_10_5x5-13_bwnib.qcir
+- Hex/hein_11_5x5-11_bwnib.qcir
+- Hex/hein_15_5x5-15_bwnib.qcir
+
+- Benchmarks/Hein/SN_N/hein_02_5x5-11_cp.qcir (matrix)
+- Benchmarks/Hein/SN_N/hein_10_5x5-11_cp.qcir (matrix)

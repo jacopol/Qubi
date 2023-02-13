@@ -91,16 +91,16 @@ Sylvan_Bdd bigOr_pairwise(const std::vector<Sylvan_Bdd>& args);
 
 
 Sylvan_Bdd Sylvan_Bdd::bigAnd(const std::vector<Sylvan_Bdd>& args) {
-    if (FOLDING == 0) return bigAnd_left2right(args);
-    if (FOLDING == 1) return bigAnd_pairwise(args);
-    std::cerr << "Internal error: FOLDING value" << FOLDING << std::endl;
+    if (ITERATE == 0) return bigAnd_left2right(args);
+    if (ITERATE == 1) return bigAnd_pairwise(args);
+    std::cerr << "Internal error: ITERATE value" << ITERATE << std::endl;
     exit(-1);
 }
 
 Sylvan_Bdd Sylvan_Bdd::bigOr(const std::vector<Sylvan_Bdd>& args) {
-    if (FOLDING == 0) return bigOr_left2right(args);
-    if (FOLDING == 1) return bigOr_pairwise(args);
-    std::cerr << "Internal error: FOLDING value" << FOLDING << std::endl;
+    if (ITERATE == 0) return bigOr_left2right(args);
+    if (ITERATE == 1) return bigOr_pairwise(args);
+    std::cerr << "Internal error: ITERATE value" << ITERATE << std::endl;
     exit(-1);
 }
 

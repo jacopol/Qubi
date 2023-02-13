@@ -4,11 +4,11 @@
 
 solving:
 
-    qubi [-e] [-r=n] [-s | -c] [-f=n] [-t=n] [-w=n] [-v=n] [infile]
+    qubi [-e] [-r=n] [-q=n] [-f] [-c] [-i=n] [-g] [-t=n] [-w=n] [-v=n] [infile]
 
 printing:
 
-    qubi -p [-r=n] [-s | -c] [-k] [-v=n] [infile]
+    qubi -p [-r=n] [-q=n] [-f] [-c] [-k] [-v=n] [infile]
 
 help:
 
@@ -25,10 +25,12 @@ _Output:_  solving:   [TRUE | FALSE] : the solution of the QBF + (counter)exampl
     -e, -example:           solve and show witness for outermost quantifiers
     -p, -print:             print the (transformed) qbf to stdout
     -k, -keep:              keep the original gate/var-names (or else: renumber)
-    -s, -split:             transform: split blocks in single quantifier
-    -c, -combine:           transform: combine blocks with same quantifier
-    -f, -fold=<n>:          evaluate and/or: 0=left-to-right, 1=pairwise (*)
+    -f, -flatten:           flattening transformation on and/or subcircuits
+    -c, -cleanup:           remove unused variable and gate names
+    -q, -quant=<n>:         quantifier block transformation: 0=keep (*), 1=split, 2=combine
     -r, -reorder=<n>:       variable reordering: 0=none, 1=dfs (*), 2=matrix
+    -i, -iterate=<n>:       evaluate and/or: 0=left-to-right, 1=pairwise (*)
+    -g, -gc:                switch on garbage collection (experimental)
     -t, -table=<n>:         BDD: set max table size to 2^n, n in [15..42], 30=(*)
     -w, -workers=<n>:       BDD: use n threads, n in [0..64], 0=#cores, 4=(*)
     -v, -verbose=<n>:       verbose level (0=quiet, 1=normal (*), 2=verbose)
@@ -41,9 +43,9 @@ Solving (with example generation, and verbose)
 
     ./qubi -e -v=2 Test/qbf3.qcir
 
-Preprocessing (combining quantifiers, and keep original names)
+Preprocessing (print after combining quantifier blocks, keeping original names)
 
-    ./qubi -p -c -k Test/qbf3.qcir
+    ./qubi -p -q=2 -k Test/qbf3.qcir
 
 ## Current Limitations:
 
@@ -61,6 +63,7 @@ Preprocessing (combining quantifiers, and keep original names)
 Sylvan -- Multi-core BDD package
 - install from https://github.com/utwente-fmt/sylvan
 - make sure that sylvan.h and sylvan.a can be found by g++
+  (using -I"path to sylvan.h" -L"path to libsylvan.a")
 
 ## Author:
 
