@@ -8,6 +8,11 @@ Preprocessing:
 - early quantification (non-prenex): push quantifiers inside
 - print/parse non-prenex (?)
 - transform back to prenex (partially or completely)
+- could transform to positive normal form. (useful?)
+- further simplifications:
+    - remove duplicate arguments, as in and(2,5,7,2,19)
+    - remove duplicate gates, 5=and(2,3), 6=and(2,3)
+    - remove empty gates (T/F), as in 5 = or(3,4), 3 = and(), 6 = and(5,3) => 6=T!
 
 Solving:
 - use parallel disjunction/conjunction

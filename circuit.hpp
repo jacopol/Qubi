@@ -79,7 +79,6 @@ public:
     Circuit& cleanup();         // remove unused variables / gates
     Circuit& reorderDfs();      // reorder by order of appearance in DFS pass
     Circuit& reorderMatrix();   // reorder by order of appearance in matrix
-    void posneg(); // for now, compute bitset of pos/neg variables per gate
 
 private:
     Circuit& permute(std::vector<int>& reordering); // store and apply reordering

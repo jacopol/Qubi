@@ -276,37 +276,3 @@ Circuit& Circuit::reorderMatrix() {
 
     return permute(reordering);
 }
-
-// todo: check #vars. Or: use vector<bool>?
-typedef std::bitset<96UL> varset;
-
-void Circuit::posneg() {
-    vector<varset> possets({varset()});
-    vector<varset> negsets({varset()});
-
-    // a variable occurs positively in itself
-    for (int i=1; i<maxVar(); i++) {
-        possets.push_back(varset().set(i));
-        negsets.push_back(varset());
-        LOG(2,"var " << i << " : " << possets[i] << std::endl);
-    }
-    // do gates
-    for (int i=maxVar(); i<maxGate(); i++) {
-        varset pos;
-        varset neg;
-        // this must change when we add xor and ite
-        for (int lit : getGate(i).inputs) {
-            if (lit > 0) { 
-                pos |= possets[lit];
-                neg |= negsets[lit];
-            } else {
-                pos |= negsets[-lit];
-                neg |= possets[-lit];
-            }
-        }
-        possets.push_back(pos);
-        negsets.push_back(neg);
-        LOG(2, "pos " << i << " : " << possets[i] << std::endl);
-        LOG(2, "neg " << i << " : " << negsets[i] << std::endl);
-    }
-}
