@@ -96,11 +96,23 @@ void Solver::matrix2bdd() {
     for (int i=c.maxVar(); i<=abs(c.getOutput()); i++) {
         LOG(2,"- gate " << c.varString(i) << ": ");
         Gate g = c.getGate(i);
-        LOG(2, Ctext[g.output] << "(" << g.inputs.size() << ")")
+        if (g.quants.size()==0)
+            LOG(2, Ctext[g.output] << "(" << g.inputs.size() << ")")
+        else
+            LOG(2, Ctext[g.output] << "(" << g.quants.size() << "x)")
         vector<Sylvan_Bdd> args;
         for (int arg: g.inputs) args.push_back(toBdd(arg));
         Sylvan_Bdd bdd(false);
-        bdd = (g.output == And ? Sylvan_Bdd::bigAnd(args) : Sylvan_Bdd::bigOr(args));
+        if (g.output == And)
+            bdd = Sylvan_Bdd::bigAnd(args);
+        else if (g.output == Or)
+            bdd = Sylvan_Bdd::bigOr(args);
+        else if (g.output == Ex)
+            bdd = args[0].ExistAbstract(g.quants);
+        else if (g.output == All)
+            bdd = args[0].UnivAbstract(g.quants);
+        else
+            assert(false);
         LOG(2," (" << bdd.NodeCount() << " nodes)" << endl);
         bdds.push_back(bdd);
 
@@ -108,7 +120,7 @@ void Solver::matrix2bdd() {
             LOG(2, "          Cleaning: ");
             for (int j : cleanup[i-c.maxVar()]) { // Do the cleanup
                 bdds[j] = Sylvan_Bdd(false);
-                LOG(2, j << ", ")
+                LOG(2, c.varString(j) << ", ")
             }
             LOG(2,"\n");
         }

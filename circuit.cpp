@@ -158,6 +158,7 @@ Circuit& Circuit::cleanup() {
     matrix = newmatrix;
 
     permute(reordering); // update all indices
+    permutation.resize(index);
 
     return *this;
 }
@@ -275,6 +276,20 @@ Circuit& Circuit::reorderMatrix() {
     assert(next == maxVar());
 
     return permute(reordering);
+}
+
+Circuit& Circuit::prefix2circuit() {
+    for (int i=maxBlock()-1; i>0; i--) { // keep outermost block...
+        const Block& b = getBlock(i);
+        Connective c = (b.quantifier==Forall ? All : Ex);
+        matrix.push_back(Gate(c,vector<int>(b.variables),vector<int>({output})));
+        output = maxGate()-1;
+    };
+    prefix = (maxBlock()>0 ? vector<Block>({prefix[0]}) : vector<Block>());
+    // Problem: should extend permutation?
+    // Problem: should invent varnames in circuit_rw
+
+    return *this;
 }
 
 // todo: check #vars. Or: use vector<bool>? Union/Intersection become more cumbersome.

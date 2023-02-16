@@ -16,11 +16,13 @@ enum Verbose {quiet, normal, verbose};
 enum Reorder {none, dfs, matrix};
 enum Iterate {left2right, pairwise};
 enum QBlocks {keep, split, combine};
+enum Prefix  {prenex, circuit, miniscope};
 
 constexpr int DEFAULT_VERBOSE = normal;
 constexpr int DEFAULT_REORDER = dfs;
 constexpr int DEFAULT_ITERATE = pairwise;
 constexpr int DEFAULT_QUANTBLOCKS = keep;
+constexpr int DEFAULT_PREFIX = circuit;
 constexpr int DEFAULT_WORKERS = 4;
 constexpr int DEFAULT_TABLE   = 30;
 
@@ -33,6 +35,7 @@ bool CLEANUP    = false;
 int ITERATE     = DEFAULT_ITERATE;
 int REORDER     = DEFAULT_REORDER;
 int QUANTBLOCKS = DEFAULT_QUANTBLOCKS;
+int PREFIX      = DEFAULT_PREFIX;
 int WORKERS     = DEFAULT_WORKERS;
 int TABLE       = DEFAULT_TABLE;
 int VERBOSE     = DEFAULT_VERBOSE;
@@ -43,8 +46,8 @@ istream* INFILE;
 
 void usage_short() {
     cout << "Usage:\n"
-         << "solve:\tqubi [-e] [-r=n] [-q=n] [-f] [-c] [-i=n] [-g] [-t=n] [-w=n] [-v=n] [infile]\n"
-         << "print:\tqubi  -p  [-r=n] [-q=n] [-f] [-c] [-k] [-v=n] [infile]\n"
+         << "solve:\tqubi [-e] [-r=n] [-q=n] [-f] [-c] [-x] [-i=n] [-g] [-t=n] [-w=n] [-v=n] [infile]\n"
+         << "print:\tqubi  -p  [-r=n] [-q=n] [-f] [-c] [-x] [-k] [-v=n] [infile]\n"
          << "help :\tqubi  -h"
          << endl;
 }
@@ -61,6 +64,7 @@ void usage() {
          << "\t-f, -flatten: \t\tflattening transformation on and/or subcircuits\n"
          << "\t-c, -cleanup: \t\tremove unused variable and gate names\n"
          << "\t-q, -quant=<n>: \tquantifier block transformation: 0=keep (*), 1=split, 2=combine\n"
+         << "\t-x, -prefix=<n>: \tmove prefix into circuit: 0=prenex, 1=copy (*), 2=miniscope\n"
          << "\t-r, -reorder=<n>: \tvariable reordering: 0=none, 1=dfs (*), 2=matrix\n"
          << "\t-i, -iterate=<n>: \tevaluate and/or: 0=left-to-right, 1=pairwise (*)\n"
          << "\t-g, -gc: \t\tswitch on garbage collection (experimental)\n"
@@ -121,6 +125,7 @@ bool parseOption(string& arg) {
     if (arg == "-flatten" || arg == "-f") { FLATTEN = true; return true; }
     if (arg == "-cleanup" || arg == "-c") { CLEANUP = true; return true; }
     if (arg == "-quant"   || arg == "-q") { QUANTBLOCKS = checkInt(arg,val,0,2); return true; }
+    if (arg == "-prefix"  || arg == "-x") { PREFIX = checkInt(arg,val,0,2); return true; }
     if (arg == "-iterate" || arg == "-i") { ITERATE = checkInt(arg,val,0,1); return true; }
     if (arg == "-reorder" || arg == "-r") { REORDER = checkInt(arg,val,0,2); return true; }
     if (arg == "-gc"      || arg == "-g") { GARBAGE = true; return true; }
@@ -183,7 +188,8 @@ int main(int argc, char *argv[]) {
     if (REORDER==dfs) qbf.reorderDfs();
     if (REORDER==matrix) qbf.reorderMatrix();
     if (VERBOSE>=1) qbf.printInfo(cerr);
-    qbf.posneg(); // experimental
+    if (PREFIX==circuit) qbf.prefix2circuit();
+    // qbf.posneg(); // experimental
     if (PRINT) {
         qbf.writeQcir(cout);
     } else {

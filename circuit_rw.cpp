@@ -21,8 +21,8 @@ CircuitRW::CircuitRW(std::istream& file): varnames({""}) { // start from 1st pos
 }
 
 const string& CircuitRW::varString(int i) const { 
-    if (abs(i) >= permutation.size())
-        return varnames.at(i); 
+    if (abs(i)>=permutation.size())
+        return *new string("?" + to_string(i)); // HACK: should invent unique names
     else 
         return varnames.at(permutation[i]);
 }
@@ -60,6 +60,10 @@ void CircuitRW::writeQcir(std::ostream& s) const {
     for (int i=maxVar() ; i<maxGate(); i++) {
         Gate g = getGate(i);
         s << litString(i) << " = " << Ctext[g.output] << "(";
+        if (g.output==All || g.output==Ex) {
+            commaSeparate(s,g.quants);
+            s << "; ";
+        }            
         commaSeparate(s, g.inputs);
         s << ")" << endl;
     }
