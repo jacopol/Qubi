@@ -79,7 +79,8 @@ public:
     Circuit& cleanup();         // remove unused variables / gates
     Circuit& reorderDfs();      // reorder by order of appearance in DFS pass
     Circuit& reorderMatrix();   // reorder by order of appearance in matrix
-
+    void posneg(); // experiment with presence of positive / negative occurrences
+    
 private:
     Circuit& permute(std::vector<int>& reordering); // store and apply reordering
     void flatten_rec(int gate);

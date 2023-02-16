@@ -183,6 +183,7 @@ int main(int argc, char *argv[]) {
     if (REORDER==dfs) qbf.reorderDfs();
     if (REORDER==matrix) qbf.reorderMatrix();
     if (VERBOSE>=1) qbf.printInfo(cerr);
+    qbf.posneg(); // experimental
     if (PRINT) {
         qbf.writeQcir(cout);
     } else {

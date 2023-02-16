@@ -276,3 +276,52 @@ Circuit& Circuit::reorderMatrix() {
 
     return permute(reordering);
 }
+
+// todo: check #vars. Or: use vector<bool>? Union/Intersection become more cumbersome.
+typedef std::bitset<256UL> varset;
+
+void Circuit::posneg() {
+    vector<varset> possets({varset()});
+    vector<varset> negsets({varset()});
+
+    // a variable occurs positively in itself
+    for (int i=1; i<maxVar(); i++) {
+        possets.push_back(varset().set(i));
+        negsets.push_back(varset());
+        LOG(2,"var " << i << " : ");
+        for (int j=1; j<maxVar(); j++) { LOG(2, (possets[i][j] ? "1" : "0")); }
+        LOG(2,std::endl);
+    }
+    // do gates
+    for (int i=maxVar(); i<maxGate(); i++) {
+        varset pos;
+        varset neg;
+        // this must change when we add xor and ite
+        for (int lit : getGate(i).inputs) {
+            if (lit > 0) { 
+                pos |= possets[lit];
+                neg |= negsets[lit];
+            } else {
+                pos |= negsets[-lit];
+                neg |= possets[-lit];
+            }
+        }
+        possets.push_back(pos);
+        negsets.push_back(neg);
+        LOG(2, "pos " << i << " : ");
+        for (int j=1; j<maxVar(); j++) { LOG(2, (possets[i][j] ? "1" : "0")); }
+        LOG(2,std::endl);
+        LOG(2, "neg " << i << " : ");
+        for (int j=1; j<maxVar(); j++) { LOG(2, (negsets[i][j] ? "1" : "0")); }
+        LOG(2,std::endl);
+    }
+
+    for (int x : getBlock(maxBlock()-1).variables) {
+        LOG(1, x << ": ");
+        for (int y : getGate(output).inputs) {
+            if (possets[abs(y)].test(x))
+                LOG(1, y << ", ");
+        }
+        LOG(1, "\n");
+    }
+}
