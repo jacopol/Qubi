@@ -117,12 +117,13 @@ void Solver::matrix2bdd() {
         bdds.push_back(bdd);
 
         if (GARBAGE) {
-            LOG(2, "          Cleaning: ");
-            for (int j : cleanup[i-c.maxVar()]) { // Do the cleanup
+            set<int> garbage = cleanup[i-c.maxVar()];
+            if (garbage.size()>0) LOG(2, "       - Garbage: ");
+            for (int j : garbage) { // Do the cleanup
                 bdds[j] = Sylvan_Bdd(false);
                 LOG(2, c.varString(j) << ", ")
             }
-            LOG(2,"\n");
+            if (garbage.size()>0) LOG(2,"\n");
         }
     }
     matrix = toBdd(c.getOutput()); // final result

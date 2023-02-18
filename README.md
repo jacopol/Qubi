@@ -4,11 +4,11 @@
 
 solving:
 
-    qubi [-e] [-r=n] [-q=n] [-f] [-c] [-i=n] [-g] [-t=n] [-w=n] [-v=n] [infile]
+    qubi [-e] [-r=n] [-q=n] [-f] [-c] [-x=n] [-i=n] [-g] [-t=n] [-w=n] [-v=n] [infile]
 
 printing:
 
-    qubi -p [-r=n] [-q=n] [-f] [-c] [-k] [-v=n] [infile]
+    qubi -p [-r=n] [-q=n] [-f] [-c] [-x=n] [-k] [-v=n] [infile]
 
 help:
 
@@ -28,12 +28,13 @@ _Output:_  solving:   [TRUE | FALSE] : the solution of the QBF + (counter)exampl
     -f, -flatten:           flattening transformation on and/or subcircuits
     -c, -cleanup:           remove unused variable and gate names
     -q, -quant=<n>:         quantifier block transformation: 0=keep (*), 1=split, 2=combine
+    -x, -prefix=<n>:        move prefix into circuit: 0=prenex (*), 1=ontop, 2=miniscope
     -r, -reorder=<n>:       variable reordering: 0=none, 1=dfs (*), 2=matrix
     -i, -iterate=<n>:       evaluate and/or: 0=left-to-right, 1=pairwise (*)
     -g, -gc:                switch on garbage collection (experimental)
     -t, -table=<n>:         BDD: set max table size to 2^n, n in [15..42], 30=(*)
     -w, -workers=<n>:       BDD: use n threads, n in [0..64], 0=#cores, 4=(*)
-    -v, -verbose=<n>:       verbose level (0=quiet, 1=normal (*), 2=verbose)
+    -v, -verbose=<n>:       verbose level (0=quiet, 1=normal (*), 2=verbose, 3=debug)
     -h, -help:              this usage message
     (*) = default values
 

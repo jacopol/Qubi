@@ -1,12 +1,11 @@
 Extensions Input:
 - allow gates xor, ite  (easy)
-- allow non-prefix qcir (semantics?)
+- allow non-prefix qcir during parsing (semantics?)
 - allow free variables  (doable)
 
 Preprocessing:
 - eliminate pure positive/negative literals
-- early quantification (non-prenex): push quantifiers inside
-- print/parse non-prenex (?)
+- early quantification: more heuristics
 - transform back to prenex (partially or completely)
 - could transform to positive normal form. (useful?)
 - further simplifications:
@@ -18,11 +17,11 @@ Solving:
 - use parallel disjunction/conjunction
 
 Improvements:
-- statistics: timing
+- statistics: intermediate timing
 - statistics: keep and print peak BDD
-- statistics: compute peak BDD during large and/or
+- statistics: compute peak BDD during large and/or (optionally)
 - take care of removed variables in returned example
-- print original gate name with -k (extend permutation)
+- rethink defaults (in particular prefix)
 
 Refactor:
 - refactor: Solver could be an abstract class / interface

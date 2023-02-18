@@ -7,32 +7,21 @@
 #include "settings.hpp"
 #include "messages.hpp"
 
-// TODO create fresh name if name==""
-
 int Circuit::addVar(string name) {
     assert(matrix.size()==0); // must create all variables before any gate exists
+    if (name=="") name = string("?" + to_string(freshname++));
     varnames.push_back(name);
     allnames.insert(name);
-    permutation.push_back(maxvar);
     return maxvar++;
 }
 
 int Circuit::addGate(const Gate& g, string name)          { 
     matrix.push_back(g);
     int max = maxGate()-1;
-    permutation.push_back(max);
+    if (name=="") name = string("?" + to_string(freshname++));
     varnames.push_back(name);
     allnames.insert(name);
     return max; 
-}
-
-// default string when variable names are unknown
-const string& Circuit::varString(int i) const { 
-    const string& name = varnames.at(permutation.at(abs(i)));
-    if (name=="")
-        return *new string("?" + to_string(i)); // HACK: should invent unique names
-    else 
-        return name;
 }
 
 void Circuit::printInfo(std::ostream &s) const {
@@ -150,7 +139,6 @@ Circuit& Circuit::cleanup() {
     mark(abs(output), marking);
     std::vector<int> reordering(maxGate(),0);
     
-    LOG(2, "...Removed Variables: ");
     int index=1; // new variable/gate-index
 
     int i=1; // old variables / gates-index
@@ -162,7 +150,7 @@ Circuit& Circuit::cleanup() {
                 newblock.push_back(x);
                 reordering[i] = index++;
             }
-            else LOG(2, varString(x) << ", ");
+            else LOG(1, "- Removed variable: " << varString(x) << std::endl);
             i++;
         }
         b.variables = newblock;
@@ -171,7 +159,7 @@ Circuit& Circuit::cleanup() {
 
     int newmaxvar = index;
 
-    LOG(2, "\n...Removed Gates: ");
+    LOG(3, "- Removed Gates: ");
 
     vector<Gate> newmatrix;
     for (Gate &g : matrix) {
@@ -179,19 +167,17 @@ Circuit& Circuit::cleanup() {
             newmatrix.push_back(g);
             reordering[i] = index++;
         }
-        else LOG(2, varString(i) << ", ");
+        else LOG(3, varString(i) << ", ");
         i++;
     }
-    LOG(2, "\n");
+    LOG(3, std::endl);
 
     maxvar = newmaxvar;
     prefix = newprefix;
     matrix = newmatrix;
 
-    permute(reordering); // update all indices, also updates output
-    permutation.resize(index);
+    return permute(reordering); // update all indices, also updates output
 
-    return *this;
 }
 
 // TODO: Temporary version for MATRIX with quantifiers
@@ -208,7 +194,7 @@ Circuit& Circuit::cleanup_matrix() {
     int index=maxVar(); // new variable/gate-index
     int i=maxVar();     // old variables / gates-index
 
-    LOG(2, "...Removed Gates: ");
+    LOG(3, "- Removed Gates: ");
 
     vector<Gate> newmatrix;
     for (Gate &g : matrix) {
@@ -216,30 +202,27 @@ Circuit& Circuit::cleanup_matrix() {
             newmatrix.push_back(g);
             reordering[i] = index++;
         }
-        else LOG(2, varString(i) << ", ");
+        else LOG(3, varString(i) << ", ");
         i++;
     }
-    LOG(2, "\n");
+    LOG(3, std::endl);
 
     matrix = newmatrix;
 
-    permute(reordering); // update all indices, also updates output
-    permutation.resize(index);
-
-    return *this;
+    return permute(reordering); // update all indices, also updates output
 }
 
 // Apply the reordering and store its inverse
 // The reordering applies to variables and possibly to gates
 Circuit& Circuit::permute(std::vector<int>& reordering) {
-    // Store the inverse permutation (to trace back original names)
 
-    // compose inverse of reordering with previous permutation
+    // compose inverse of reordering with varnames
     {
-    vector<int> oldperm(permutation);
+    vector<string> oldnames(varnames);
     for (int i=0; i<reordering.size(); i++)
-        permutation[reordering[i]] = oldperm[i];
+        varnames[reordering[i]] = oldnames[i];
     }
+    varnames.resize(maxGate());
 
     // Apply the reordering ...
     const auto reorder = [&](int& x) {
@@ -285,24 +268,22 @@ Circuit& Circuit::reorderDfs() {
             allvars.erase(v);
             if (v < maxVar())
                 reordering[v] = next++;         // map variable v to next index
-            else
-//                for (int x: getGate(v).inputs)  // visit all inputs of gate v
-//                    todo.push_back(abs(x));
-            { const vector<int>& inputs = getGate(v).inputs;
-              for (int i=inputs.size()-1; i>=0; i--)  // visit all inputs of gate v
+            else { 
+                const vector<int>& inputs = getGate(v).inputs;
+                for (int i=inputs.size()-1; i>=0; i--)  // visit all inputs of gate v
                     todo.push_back(abs(inputs[i]));
             }
         }
     }
 
     // Add unused variables to reordering 
-    LOG(2, "...Unused variables/gates: ");
+    LOG(3, "- Unused variables/gates: ");
     for (int x : allvars) {
-        LOG(2, varString(x) << ", "); // one , too much
+        LOG(3, varString(x) << ", "); // one , too much
         if (x < maxVar()) 
             reordering[x] = next++;
     }
-    LOG(2, std::endl);
+    LOG(3, std::endl);
     assert(next == maxVar());
 
     return permute(reordering);
@@ -345,6 +326,7 @@ Circuit& Circuit::reorderMatrix() {
 }
 
 Circuit& Circuit::prefix2circuit() {
+    LOG(1, "Moving quantifiers to top of matrix" << std::endl)
     while (maxBlock()>1) { // keep outermost block...
         const Block& b = prefix.back();
         Connective c = (b.quantifier==Forall ? All : Ex);
@@ -355,6 +337,8 @@ Circuit& Circuit::prefix2circuit() {
     return *this;
 }
 
+// compute positive/negative occurrences, and their union (dependencies)
+// currently, we report (and use) only all dependencies
 vector<varset> Circuit::posneg() {
     vector<varset> possets({varset()});
     vector<varset> negsets({varset()});
@@ -363,16 +347,17 @@ vector<varset> Circuit::posneg() {
     for (int i=1; i<maxVar(); i++) {
         possets.push_back(varset().set(i));
         negsets.push_back(varset());
-        if (VERBOSE>=3) {
+        if (VERBOSE>=4) { // currently switched off
             std::cerr <<  "var " << i << " : ";
             for (int j=1; j<maxVar(); j++) { std::cerr << (possets[i][j] ? "1" : "0"); }
             std::cerr << std::endl;
         }
     }
-    // do gates
+    // do all gates
     for (int i=maxVar(); i<maxGate(); i++) {
         varset pos;
         varset neg;
+        // this works for And, Or, All, Ex
         // this must change when we add xor and ite
         for (int lit : getGate(i).inputs) {
             if (lit > 0) { 
@@ -385,7 +370,7 @@ vector<varset> Circuit::posneg() {
         }
         possets.push_back(pos);
         negsets.push_back(neg);
-        if (VERBOSE>=3) {
+        if (VERBOSE>=4) { // currently switched off
             std::cerr << "pos " << i << " : ";
             for (int j=1; j<maxVar(); j++) { std::cerr << (possets[i][j] ? "1" : "0"); }
             std::cerr << std::endl;
@@ -400,10 +385,11 @@ vector<varset> Circuit::posneg() {
         dependencies.push_back(possets[i] | negsets[i]);
     }
 
-    if (VERBOSE>=3) {
+    if (VERBOSE>=4) { // Currently switched off
         for (int i=0; i<maxGate(); i++) {
             std::cerr << "dep " << i << " : ";
-            for (int j=1; j<maxVar(); j++) { std::cerr << (dependencies[i][j] ? "1" : "0"); }
+            for (int j=1; j<maxVar(); j++)
+                std::cerr << (dependencies[i][j] ? "1" : "0");
             std::cerr << std::endl;
         }
     }
@@ -416,7 +402,7 @@ Connective Quant2Conn(Quantifier q) { return (q==Forall ? All : Ex); }
 
 int Circuit::bringitdown(Quantifier q, int x, int gate, const vector<varset>& dependencies) {
     if (abs(gate) < maxVar()) { // the gate is a single input variable (leaf of circuit)
-        LOG(2,"Eliminating " << Qtext[q] << " " << varString(x) 
+        LOG(3,"- Eliminating " << Qtext[q] << " " << varString(x) 
             << " over input " << varString(gate) << std::endl);
         if (abs(gate) == x) {
             if (q==Exists) { // Exist x (x) == Exists x (!x) == TRUE
@@ -430,7 +416,7 @@ int Circuit::bringitdown(Quantifier q, int x, int gate, const vector<varset>& de
     }
 
     Gate g = getGate(gate);
-    LOG(2,"Pushing " << Qtext[q] << " " << varString(x) 
+    LOG(3,"- Pushing " << Qtext[q] << " " << varString(x) 
             << " over gate " << varString(gate) << " ("<< Ctext[g.output] << ")" << std::endl);
     if (g.inputs.size()==0)
         return gate; // short-cut. quantification over constant can be dropped.
@@ -457,11 +443,11 @@ int Circuit::bringitdown(Quantifier q, int x, int gate, const vector<varset>& de
         vector<int>args_neg;
         for (int arg : g.inputs) { 
             if (dependencies[abs(arg)][x]) {
-                LOG(3,"pos: " << arg << std::endl)
+                LOG(4,"pos: " << arg << std::endl)
                 args_pos.push_back(arg);
             } else {
                 args_neg.push_back(arg);
-                LOG(3,"neg: " << arg << std::endl)
+                LOG(4,"neg: " << arg << std::endl)
             }
         }
         
@@ -514,7 +500,7 @@ int Circuit::bringitdown(Quantifier q, int x, int gate, const vector<varset>& de
 }
 
 Circuit& Circuit::miniscope() {
-    LOG(2,"Moving quantifiers inside" << std::endl);
+    LOG(1,"Moving quantifiers inside (early quantification)" << std::endl);
     while (maxBlock()>1) {
         Block b = prefix.back();
         for (int var : b.variables) {

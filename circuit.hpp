@@ -49,7 +49,7 @@ public:
 };
 
 // Or: use vector<bool>? Union/Intersection become more cumbersome.
-typedef std::bitset<256UL> varset;
+typedef std::bitset<384UL> varset;
 
 class Circuit {
 private:
@@ -57,16 +57,16 @@ private:
     vector<Gate> matrix;        // gate definitions (shifted by -maxvar)
     int output;                 // output gate
     int maxvar=1;               // next unused variable, start at 1
-    vector<int> permutation;    // permutation of variables, start at 1
     vector<string> varnames;    // map identifiers to external names, start at 1
     set<string> allnames;       // keeps all known names
+    int freshname=0;            // to generate fresh names
 
 public:
     int maxVar() const                  { return maxvar; }
     int maxBlock() const                { return prefix.size(); }
     int maxGate() const                 { return matrix.size() + maxvar; }
 
-    Circuit() : varnames({""}), permutation({0}) {} // var ids start from 1
+    Circuit() : varnames({""})          { } // var ids start from 1
 
     const Block& getBlock(int i) const  { return prefix.at(i); }
     void addBlock(const Block& b)       { prefix.push_back(b); }
@@ -74,8 +74,8 @@ public:
     // all Vars need to be created before all Gates
     int addVar(string name="");                   // create input variable
     int addGate(const Gate& g, string name="");   // create new gate
-    virtual const string& varString(int i) const; // for var and gate indices
 
+    const string& varString(int i) const { return varnames.at(abs(i)); }
     bool freshName(const string name)   { return allnames.count(name)==0; }
     const Gate& getGate(int i) const    { return matrix.at(i - maxvar); }
     
