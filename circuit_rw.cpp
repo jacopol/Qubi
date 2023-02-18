@@ -12,19 +12,8 @@
 
 using namespace std;
 
-CircuitRW::CircuitRW(std::istream& file): varnames({""}) { // start from 1st position
+CircuitRW::CircuitRW(std::istream& file) { // start from 1st position
     readQcir(file);
-    // initialize permutation
-    permutation.resize(maxGate());
-    for (int i=0; i<maxGate(); i++)
-        permutation[i] = i;
-}
-
-const string& CircuitRW::varString(int i) const { 
-    if (abs(i)>=permutation.size())
-        return *new string("?" + to_string(i)); // HACK: should invent unique names
-    else 
-        return varnames.at(permutation[i]);
 }
 
 /*** Writing QCIR specification ***/
@@ -84,31 +73,16 @@ void CircuitRW::writeVal(std::ostream& s, const Valuation& val) const {
 const string variable("[a-zA-z0-9_]+");
 const string literal("-?" + variable);
 
-void CircuitRW::setVarOrGate(const string& var, int i) {
-    assert(i==varnames.size());
-    vars[var] = i;
-    varnames.push_back(var);
-}
-
-// create a new gate check that it didn't exist
-void CircuitRW::declGate(const string& gate) {
-    assertThrow(vars.find(gate) == vars.end(), VarDefined(gate,lineno))
-    setVarOrGate(gate, maxGate());
-}
-
-// create a new variable and check that it didn't exist
-int CircuitRW::declVar(const string& var) {
-    assertThrow(vars.find(var)==vars.end(), VarDefined(var,lineno))
-    setVarOrGate(var, maxvar);
-    return maxvar++;
-}
-
 // Note: currently, we allow any separators, not just ','
 vector<int> CircuitRW::declVars(string &line) {
     vector<int> result;
     smatch m;
     while (regex_search(line, m, regex(variable))) {
-        result.push_back(declVar(m[0]));
+        string var = m[0];
+        assertThrow(freshName(var), VarDefined(var,lineno));
+        int i = addVar(var);
+        vars[var] = i;
+        result.push_back(i);
         line = m.suffix();
     }
     return result;
@@ -197,9 +171,9 @@ bool CircuitRW::readGateDef(string& line) {
     // Note: 
     // - we need to check the gate before creating the gate name
     // - we need to add the gate after creating the gate name
-    Gate g = readGate(line);
-    declGate(gatename);
-    addGate(g);
+    assertThrow(freshName(gatename), VarDefined(gatename,lineno))
+    int i = addGate(readGate(line), gatename);
+    vars[gatename] = i;
     return true;
 }
 

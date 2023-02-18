@@ -7,13 +7,8 @@
 #include "circuit.hpp"
 
 class CircuitRW : public Circuit {
-    private:
-        vector<string> varnames;                 // map identifiers to external names, start at 1
-
     public:
         CircuitRW(std::istream& file);
-
-        const string& varString(int i) const;
 
         void readQcir(std::istream&);            // read from qcir file format
         void writeQcir(std::ostream&) const;     // write to qcir file format
@@ -31,9 +26,6 @@ class CircuitRW : public Circuit {
         string outputline;          // save outputline
         int outputlineno;           // save line number of outputline
 
-        void setVarOrGate(const string& var, int i);
-        void declGate(const string& gate);
-        int declVar(const string& var);
         vector<int> declVars(string& vars);
         
         int getIndex(const string& ident) const;

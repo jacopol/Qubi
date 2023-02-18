@@ -7,6 +7,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <bitset>
 #include <array>
 #include <string>
 
@@ -15,6 +16,7 @@ using std::map;
 using std::array;
 using std::string;
 using std::pair;
+using std::set;
 
 enum Connective {And, Or, All, Ex};
 constexpr array<Connective,4> Connectives = {And, Or, All, Ex};
@@ -46,31 +48,40 @@ public:
     int size() const            { return variables.size(); }
 };
 
-class Circuit {
-protected:
-    int maxvar=1;               // next unused variable, start at 1
-    vector<int> permutation;    // permutation of variables (empty if identity)
+// Or: use vector<bool>? Union/Intersection become more cumbersome.
+typedef std::bitset<256UL> varset;
 
+class Circuit {
 private:
-    vector<Block> prefix;
+    vector<Block> prefix;       // blocks of quantifiers
     vector<Gate> matrix;        // gate definitions (shifted by -maxvar)
     int output;                 // output gate
+    int maxvar=1;               // next unused variable, start at 1
+    vector<int> permutation;    // permutation of variables, start at 1
+    vector<string> varnames;    // map identifiers to external names, start at 1
+    set<string> allnames;       // keeps all known names
 
 public:
     int maxVar() const                  { return maxvar; }
     int maxBlock() const                { return prefix.size(); }
     int maxGate() const                 { return matrix.size() + maxvar; }
 
+    Circuit() : varnames({""}), permutation({0}) {} // var ids start from 1
+
     const Block& getBlock(int i) const  { return prefix.at(i); }
     void addBlock(const Block& b)       { prefix.push_back(b); }
 
+    // all Vars need to be created before all Gates
+    int addVar(string name="");                   // create input variable
+    int addGate(const Gate& g, string name="");   // create new gate
+    virtual const string& varString(int i) const; // for var and gate indices
+
+    bool freshName(const string name)   { return allnames.count(name)==0; }
     const Gate& getGate(int i) const    { return matrix.at(i - maxvar); }
-    void addGate(const Gate& g)         { matrix.push_back(g); }
     
     int getOutput() const               { return output; }
     void setOutput(int out)             { output = out; }
 
-    virtual const string& varString(int i) const;
     void printInfo(std::ostream& s) const;
 
 // Transformations
@@ -78,18 +89,23 @@ public:
     Circuit& split();           // every block gets single quantifier
     Circuit& combine();         // blocks become strictly alternating
     Circuit& flatten();         // flatten and/or gates (and/or become alternating)
-    Circuit& cleanup();         // remove unused variables / gates
+    Circuit& cleanup();         // remove unused variables / gates. ONLY FOR PRENEX FORM
     Circuit& reorderDfs();      // reorder by order of appearance in DFS pass
     Circuit& reorderMatrix();   // reorder by order of appearance in matrix
-    Circuit& prefix2circuit();   // move prefix into circuit gates
-
-    void posneg(); // experiment with presence of positive / negative occurrences
+    Circuit& prefix2circuit();  // move prefix on top of circuit gates
+    Circuit& miniscope();       // move prefix down into circuit gates
 
 private:
-    Circuit& permute(std::vector<int>& reordering); // store and apply reordering
+    Circuit& permute(vector<int>& reordering); // store and apply reordering
     void flatten_rec(int gate);
     void gather(int gate, int sign, vector<int>& args); // gather args with same connective 
-    void mark(int gate, std::set<int>& mark); // mark all reachable variables and gates from gate
+    void mark(int gate, set<int>& mark); // mark all reachable variables and gates from gate
+    vector<varset> posneg(); // compute positive / negative input dependencies per gate
+    int bringitdown(Quantifier q, int x, int gate, const vector<varset>& dependencies);   
+        // move quantifier (q x) into circuit below (gate), return new gate.
+        // use the input-variable dependencies for each gate.
+    Circuit& cleanup_matrix();  // Only cleanup matrix. Can be used for NON-PRENEX as well
+
 };
 
 #endif

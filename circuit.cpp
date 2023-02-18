@@ -2,16 +2,37 @@
 // Aarhus University
 
 #include <iostream>
-#include <set>
 #include <assert.h>
 #include "circuit.hpp"
 #include "settings.hpp"
 #include "messages.hpp"
-#include <bitset>
+
+// TODO create fresh name if name==""
+
+int Circuit::addVar(string name) {
+    assert(matrix.size()==0); // must create all variables before any gate exists
+    varnames.push_back(name);
+    allnames.insert(name);
+    permutation.push_back(maxvar);
+    return maxvar++;
+}
+
+int Circuit::addGate(const Gate& g, string name)          { 
+    matrix.push_back(g);
+    int max = maxGate()-1;
+    permutation.push_back(max);
+    varnames.push_back(name);
+    allnames.insert(name);
+    return max; 
+}
 
 // default string when variable names are unknown
-const string& Circuit::varString(int i) const {
-    return *(new string("id:" + std::to_string(i))); 
+const string& Circuit::varString(int i) const { 
+    const string& name = varnames.at(permutation.at(abs(i)));
+    if (name=="")
+        return *new string("?" + to_string(i)); // HACK: should invent unique names
+    else 
+        return name;
 }
 
 void Circuit::printInfo(std::ostream &s) const {
@@ -55,11 +76,19 @@ Circuit& Circuit::combine() {
     return *this;
 }
 
-Connective dual(Connective c) {
+Connective dualC(Connective c) {
     if (c == And)
         return Or;
     if (c == Or)
         return And;
+    assert(false);
+}
+
+Quantifier dualQ(Quantifier q) {
+    if (q == Forall)
+        return Exists;
+    if (q == Exists)
+        return Forall;
     assert(false);
 }
 
@@ -76,7 +105,7 @@ void Circuit::gather(int gate, int sign, vector<int>& args) {
             Connective child = getGate(abs(arg)).output;
             if (arg > 0 && child == g.output)
                 gather(arg, sign, args);
-            else if (arg < 0 && child == dual(g.output)) 
+            else if (arg < 0 && child == dualC(g.output)) 
                 gather(-arg, -sign, args);
             else 
                 args.push_back(arg * sign);
@@ -108,10 +137,12 @@ Circuit& Circuit::flatten() {
 void Circuit::mark(int gate, std::set<int>& marking) { 
     assert(gate>0);
     marking.insert(gate);
-    if (gate >= maxvar) 
+    if (gate >= maxVar()) 
         for (int arg : getGate(gate).inputs)
             mark(abs(arg), marking);
 }
+
+// TODO: This is only correct for PRENEX normal form
 
 Circuit& Circuit::cleanup() {
     LOG(1, "Cleaning up Variables and Gates" << std::endl);
@@ -157,7 +188,42 @@ Circuit& Circuit::cleanup() {
     prefix = newprefix;
     matrix = newmatrix;
 
-    permute(reordering); // update all indices
+    permute(reordering); // update all indices, also updates output
+    permutation.resize(index);
+
+    return *this;
+}
+
+// TODO: Temporary version for MATRIX with quantifiers
+
+Circuit& Circuit::cleanup_matrix() {
+    std::set<int> marking;
+    mark(abs(output), marking);
+    std::vector<int> reordering(maxGate(),0);
+
+    for (int i=1; i<maxVar(); i++) {
+        reordering[i] = i;
+    }
+
+    int index=maxVar(); // new variable/gate-index
+    int i=maxVar();     // old variables / gates-index
+
+    LOG(2, "...Removed Gates: ");
+
+    vector<Gate> newmatrix;
+    for (Gate &g : matrix) {
+        if (marking.count(i)>0) {
+            newmatrix.push_back(g);
+            reordering[i] = index++;
+        }
+        else LOG(2, varString(i) << ", ");
+        i++;
+    }
+    LOG(2, "\n");
+
+    matrix = newmatrix;
+
+    permute(reordering); // update all indices, also updates output
     permutation.resize(index);
 
     return *this;
@@ -279,23 +345,17 @@ Circuit& Circuit::reorderMatrix() {
 }
 
 Circuit& Circuit::prefix2circuit() {
-    for (int i=maxBlock()-1; i>0; i--) { // keep outermost block...
-        const Block& b = getBlock(i);
+    while (maxBlock()>1) { // keep outermost block...
+        const Block& b = prefix.back();
         Connective c = (b.quantifier==Forall ? All : Ex);
-        matrix.push_back(Gate(c,vector<int>(b.variables),vector<int>({output})));
-        output = maxGate()-1;
+        output = addGate(Gate(c,vector<int>(b.variables),vector<int>({output})));
+        prefix.pop_back();
     };
-    prefix = (maxBlock()>0 ? vector<Block>({prefix[0]}) : vector<Block>());
-    // Problem: should extend permutation?
-    // Problem: should invent varnames in circuit_rw
 
     return *this;
 }
 
-// todo: check #vars. Or: use vector<bool>? Union/Intersection become more cumbersome.
-typedef std::bitset<256UL> varset;
-
-void Circuit::posneg() {
+vector<varset> Circuit::posneg() {
     vector<varset> possets({varset()});
     vector<varset> negsets({varset()});
 
@@ -303,9 +363,11 @@ void Circuit::posneg() {
     for (int i=1; i<maxVar(); i++) {
         possets.push_back(varset().set(i));
         negsets.push_back(varset());
-        LOG(2,"var " << i << " : ");
-        for (int j=1; j<maxVar(); j++) { LOG(2, (possets[i][j] ? "1" : "0")); }
-        LOG(2,std::endl);
+        if (VERBOSE>=3) {
+            std::cerr <<  "var " << i << " : ";
+            for (int j=1; j<maxVar(); j++) { std::cerr << (possets[i][j] ? "1" : "0"); }
+            std::cerr << std::endl;
+        }
     }
     // do gates
     for (int i=maxVar(); i<maxGate(); i++) {
@@ -323,20 +385,143 @@ void Circuit::posneg() {
         }
         possets.push_back(pos);
         negsets.push_back(neg);
-        LOG(2, "pos " << i << " : ");
-        for (int j=1; j<maxVar(); j++) { LOG(2, (possets[i][j] ? "1" : "0")); }
-        LOG(2,std::endl);
-        LOG(2, "neg " << i << " : ");
-        for (int j=1; j<maxVar(); j++) { LOG(2, (negsets[i][j] ? "1" : "0")); }
-        LOG(2,std::endl);
+        if (VERBOSE>=3) {
+            std::cerr << "pos " << i << " : ";
+            for (int j=1; j<maxVar(); j++) { std::cerr << (possets[i][j] ? "1" : "0"); }
+            std::cerr << std::endl;
+            std::cerr << "neg " << i << " : ";
+            for (int j=1; j<maxVar(); j++) { std::cerr << (negsets[i][j] ? "1" : "0"); }
+            std::cerr << std::endl;
+        }
     }
 
-    for (int x : getBlock(maxBlock()-1).variables) {
-        LOG(1, x << ": ");
-        for (int y : getGate(output).inputs) {
-            if (possets[abs(y)].test(x))
-                LOG(1, y << ", ");
-        }
-        LOG(1, "\n");
+    vector<varset> dependencies;
+    for (int i=0; i<maxGate(); i++) {
+        dependencies.push_back(possets[i] | negsets[i]);
     }
+
+    if (VERBOSE>=3) {
+        for (int i=0; i<maxGate(); i++) {
+            std::cerr << "dep " << i << " : ";
+            for (int j=1; j<maxVar(); j++) { std::cerr << (dependencies[i][j] ? "1" : "0"); }
+            std::cerr << std::endl;
+        }
+    }
+    return dependencies;
+}
+
+Connective Quant2Conn(Quantifier q) { return (q==Forall ? All : Ex); }
+
+// TODO: needs an operations cache?
+
+int Circuit::bringitdown(Quantifier q, int x, int gate, const vector<varset>& dependencies) {
+    if (abs(gate) < maxVar()) { // the gate is a single input variable (leaf of circuit)
+        LOG(2,"Eliminating " << Qtext[q] << " " << varString(x) 
+            << " over input " << varString(gate) << std::endl);
+        if (abs(gate) == x) {
+            if (q==Exists) { // Exist x (x) == Exists x (!x) == TRUE
+                return addGate(Gate(And,vector<int>()));
+            } else { // Forall x (x) == Forall x (!x) == FALSE
+                return addGate(Gate(Or,vector<int>()));
+            }
+        } else {
+            return gate; // ignore quantifier as in Exist/Forall x (y)
+        }
+    }
+
+    Gate g = getGate(gate);
+    LOG(2,"Pushing " << Qtext[q] << " " << varString(x) 
+            << " over gate " << varString(gate) << " ("<< Ctext[g.output] << ")" << std::endl);
+    if (g.inputs.size()==0)
+        return gate; // short-cut. quantification over constant can be dropped.
+
+    if ( (g.output==And && q==Forall) || (g.output==Or && q==Exists)) {
+        // Can push Forall/Exists down directly to all arguments of And/Or.
+        // Takes care of negative edges (pushes dual quantifier down)
+        // As in Forall x (A1 /\ !A2 /\ A3) ==> (All x A1) /\ !(Ex x A2) /\ (All x A3)            
+        vector<int> newargs;
+        for (int i: g.inputs) {
+            Quantifier newq = (i>0 ? q : dualQ(q));
+            int newarg = bringitdown(newq, x, abs(i), dependencies);
+            newarg = (i>0 ? newarg : -newarg);
+            newargs.push_back(newarg);
+        }
+        return addGate(Gate(g.output,newargs));
+    }
+
+    if ( g.output==And || g.output==Or) {
+        // split args in dependent and independent args
+        // case distinction on split args empty
+        // As in Exists x (A1(x) /\ A2(x) /\ A3 /\ A4) ==> A3 /\ A4 /\ Exists x ( A1(x) /\ A2(x))
+        vector<int>args_pos;
+        vector<int>args_neg;
+        for (int arg : g.inputs) { 
+            if (dependencies[abs(arg)][x]) {
+                LOG(3,"pos: " << arg << std::endl)
+                args_pos.push_back(arg);
+            } else {
+                args_neg.push_back(arg);
+                LOG(3,"neg: " << arg << std::endl)
+            }
+        }
+        
+        if (args_pos.size()==0)
+            return gate; // the quantified variable doesn't occur, just drop quantifier
+        else {
+            int newarg;
+            if (args_pos.size()==1) {
+                    // push quantifier into the only dependent argument
+                    // take care of negations
+                Quantifier newq = (args_pos[0]>0 ? q : dualQ(q));
+                newarg = bringitdown(newq, x, abs(args_pos[0]), dependencies);
+                newarg = (args_pos[0]>0 ? newarg : -newarg);
+            }
+            else {// make a new gate for the dependent arguments
+                newarg = addGate(Gate(g.output, args_pos));
+                newarg = addGate(Gate(Quant2Conn(q), vector<int>({x}), vector<int>({newarg})));
+            }
+            if (args_neg.size()==0)
+                return newarg;
+            else {
+                args_neg.push_back(newarg);
+                return addGate(Gate(g.output, args_neg));
+            }
+        }
+    }
+
+    if (g.output==All || g.output==Ex) {
+        if (g.output == Quant2Conn(q)) { // push new quantifier through the (same) old quantifier
+            Quantifier newq = (g.inputs[0]>0 ? q : dualQ(q));
+            int new_arg = bringitdown(newq, x, abs(g.inputs[0]), dependencies);
+            if (new_arg > maxVar() && getGate(new_arg).output == Quant2Conn(newq)) {
+                // combine both quantifiers
+                vector<int> newx(g.quants);
+                newx.push_back(x);
+                new_arg = getGate(new_arg).inputs[0];
+                new_arg = (g.inputs[0]>0 ? new_arg : -new_arg);
+                return addGate(Gate(g.output, newx, vector<int>({new_arg})));
+            } else {
+                new_arg = (g.inputs[0]>0 ? new_arg : -new_arg);
+                return addGate(Gate(g.output, g.quants, vector<int>({new_arg})));
+            }
+        } else { // apply quantifier q to gate of opposite quantifier
+            int i = addGate(Gate(Quant2Conn(q), vector<int>({x}), vector<int>({gate})));
+            return i;
+        }
+    }
+    // all cases should be covered
+    assert(false);
+}
+
+Circuit& Circuit::miniscope() {
+    LOG(2,"Moving quantifiers inside" << std::endl);
+    while (maxBlock()>1) {
+        Block b = prefix.back();
+        for (int var : b.variables) {
+            output = bringitdown(b.quantifier, var, output, posneg());
+            cleanup_matrix();
+        }
+        prefix.pop_back();
+    }
+    return *this;
 }

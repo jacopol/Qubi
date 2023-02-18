@@ -189,6 +189,8 @@ int main(int argc, char *argv[]) {
     if (REORDER==matrix) qbf.reorderMatrix();
     if (VERBOSE>=1) qbf.printInfo(cerr);
     if (PREFIX==circuit) qbf.prefix2circuit();
+    if (PREFIX==miniscope) qbf.miniscope();
+    
     // qbf.posneg(); // experimental
     if (PRINT) {
         qbf.writeQcir(cout);
