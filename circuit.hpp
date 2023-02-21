@@ -84,6 +84,9 @@ public:
 
     void printInfo(std::ostream& s) const;
 
+    int buildConn(Connective c, const vector<int>& gates);
+    int buildQuant(Connective c, const vector<int>& x, int gate);
+
 // Transformations
 
     Circuit& split();           // every block gets single quantifier

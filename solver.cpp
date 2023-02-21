@@ -102,6 +102,17 @@ void Solver::matrix2bdd() {
             LOG(2, Ctext[g.output] << "(" << g.quants.size() << "x)")
         vector<Sylvan_Bdd> args;
         for (int arg: g.inputs) args.push_back(toBdd(arg));
+
+        if (GARBAGE) {
+            set<int> garbage = cleanup[i-c.maxVar()];
+            if (garbage.size()>0) LOG(3, " (garbage:");
+            for (int j : garbage) { // Do the cleanup
+                bdds[j] = Sylvan_Bdd(false);
+                LOG(3, " " << c.varString(j))
+            }
+            if (garbage.size()>0) LOG(3,")");
+        }
+
         Sylvan_Bdd bdd(false);
         if (g.output == And)
             bdd = Sylvan_Bdd::bigAnd(args);
@@ -115,16 +126,6 @@ void Solver::matrix2bdd() {
             assert(false);
         LOG(2," (" << bdd.NodeCount() << " nodes)" << endl);
         bdds.push_back(bdd);
-
-        if (GARBAGE) {
-            set<int> garbage = cleanup[i-c.maxVar()];
-            if (garbage.size()>0) LOG(2, "       - Garbage: ");
-            for (int j : garbage) { // Do the cleanup
-                bdds[j] = Sylvan_Bdd(false);
-                LOG(2, c.varString(j) << ", ")
-            }
-            if (garbage.size()>0) LOG(2,"\n");
-        }
     }
     matrix = toBdd(c.getOutput()); // final result
 }

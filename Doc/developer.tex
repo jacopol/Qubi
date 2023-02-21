@@ -1,0 +1,35 @@
+\documentclass{article}
+\title{QUBI: BDD-based QBF solver}
+\author{Jaco van de Pol}
+\begin{document}
+\section{Transformations}
+\subsection{Flattening -f}
+\subsection{Cleaning -c}
+\subsection{Early quantification -x=2}
+\subsubsection{Push one quantifier down (bringitdown)}
+Below, $P$ is always positive, and $A$ can be positive or negative,
+but independent of $x$. $B$ can be positive or negative, but dependent on $x$.
+
+\begin{eqnarray*}
+    push(\exists x, \neg P) & \equiv & \neg push(\forall x, P) \\
+    push(\exists x, x) & \equiv & True \\
+    push(\exists x, y) & \equiv & y \\
+    push(\exists x, A_1 \vee A_2 \vee B_1(x) \vee B_2(x)) & \equiv & 
+        A_1 \vee A_2 \vee push(\exists x, B_1(x))\vee push(\exists x, B_2(x))\\
+    push(\exists x, A_1 \wedge A_2) & \equiv & A_1 \wedge A_2 \\
+    push(\exists x, A_1 \wedge A_2 \wedge B_1(x)) & \equiv & 
+        A_1 \wedge A_2 \wedge push(\exists x, B_1(x))\\
+    push(\exists x, A_1 \wedge A_2 \wedge B_1(x) \wedge B_2(x)) & \equiv & 
+        A_1 \wedge A_2 \wedge \exists x (B_1(x) \wedge B_2(x))\\
+    push(\exists x, \exists y (B(x,y))) & \equiv & 
+        \exists y (push(\exists x, B(x,y)))\\
+    push(\exists x, \forall y (B(x,y))) & \equiv & 
+        \exists x (\forall y(B(x,y)))
+\end{eqnarray*}
+
+We have the dual cases for $push(\forall x, \cdots)$.
+
+\subsubsection{Heuristics}
+To be done; currently we push quantifiers down in specification order.
+\section{Solver}
+\end{document}

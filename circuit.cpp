@@ -70,6 +70,10 @@ Connective dualC(Connective c) {
         return Or;
     if (c == Or)
         return And;
+    if (c == Ex)
+        return All;
+    if (c == All)
+        return Ex;
     assert(false);
 }
 
@@ -398,13 +402,49 @@ vector<varset> Circuit::posneg() {
 
 Connective Quant2Conn(Quantifier q) { return (q==Forall ? All : Ex); }
 
-// TODO: needs an operations cache?
+// TODO: could do flattening
+// TODO: eliminate T/F
+int Circuit::buildConn(Connective c, const vector<int>& gates) {
+    assert(c==And || c==Or);
+    if (gates.size()==1)
+        return gates[0];
+    else {
+        return addGate(Gate(c, gates));
+    }
+}
 
+// TODO: can simplify variable case
+int Circuit::buildQuant(Connective q, const vector<int>& xs, int gate) {
+    assert(q==All || q==Ex);
+    if (abs(gate) < maxVar()) { // Variable: just add the quantifier
+        return addGate(Gate(q, xs, vector<int>({gate})));
+    }
+    Gate g = getGate(abs(gate));
+    if (gate > 0 && g.output == q) { // combine quantifiers as in Ex xs (Ex ys A) => Ex (ys,xs) A
+        vector<int> newx(g.quants);
+        for (int x : xs) newx.push_back(x); // append(newx,xs)
+        return addGate(Gate(q, newx, vector<int>({g.inputs[0]})));
+    }
+    if (gate < 0 && g.output == dualC(q)) { // combine quantifiers as in Ex xs -(All ys A) => Ex (ys,xs) -A
+        vector<int> newx(g.quants);
+        for (int x=0; x<xs.size(); x++) newx.push_back(x); // append(newx,xs)
+        return addGate(Gate(q, newx, vector<int>({-g.inputs[0]}))); // negation!
+    } else {
+        return addGate(Gate(q, xs, vector<int>({gate})));
+    }
+}
+
+// TODO: needs an operations cache?
 int Circuit::bringitdown(Quantifier q, int x, int gate, const vector<varset>& dependencies) {
-    if (abs(gate) < maxVar()) { // the gate is a single input variable (leaf of circuit)
+
+    if (gate<0) { // handle negative edges by dual quantifier
+        return -bringitdown(dualQ(q), x, -gate, dependencies); 
+    }
+
+    if (gate < maxVar()) { // the gate is a single input variable (leaf of circuit)
         LOG(3,"- Eliminating " << Qtext[q] << " " << varString(x) 
             << " over input " << varString(gate) << std::endl);
-        if (abs(gate) == x) {
+        if (gate == x) {
             if (q==Exists) { // Exist x (x) == Exists x (!x) == TRUE
                 return addGate(Gate(And,vector<int>()));
             } else { // Forall x (x) == Forall x (!x) == FALSE
@@ -418,56 +458,54 @@ int Circuit::bringitdown(Quantifier q, int x, int gate, const vector<varset>& de
     Gate g = getGate(gate);
     LOG(3,"- Pushing " << Qtext[q] << " " << varString(x) 
             << " over gate " << varString(gate) << " ("<< Ctext[g.output] << ")" << std::endl);
-    if (g.inputs.size()==0)
+    if (g.inputs.size()==0) {
         return gate; // short-cut. quantification over constant can be dropped.
+    }
 
     if ( (g.output==And && q==Forall) || (g.output==Or && q==Exists)) {
         // Can push Forall/Exists down directly to all arguments of And/Or.
         // Takes care of negative edges (pushes dual quantifier down)
         // As in Forall x (A1 /\ !A2 /\ A3) ==> (All x A1) /\ !(Ex x A2) /\ (All x A3)            
         vector<int> newargs;
-        for (int i: g.inputs) {
-            Quantifier newq = (i>0 ? q : dualQ(q));
-            int newarg = bringitdown(newq, x, abs(i), dependencies);
-            newarg = (i>0 ? newarg : -newarg);
+        for (int arg: g.inputs) {
+            int newarg = arg;
+            if (dependencies[abs(arg)][x]) { // push quantifier into dependent arguments
+                newarg = bringitdown(q, x, arg, dependencies);
+            }
             newargs.push_back(newarg);
         }
-        return addGate(Gate(g.output,newargs));
+        return addGate(Gate(g.output, newargs));
     }
 
     if ( g.output==And || g.output==Or) {
         // split args in dependent and independent args
         // case distinction on split args empty
         // As in Exists x (A1(x) /\ A2(x) /\ A3 /\ A4) ==> A3 /\ A4 /\ Exists x ( A1(x) /\ A2(x))
-        vector<int>args_pos;
-        vector<int>args_neg;
+        vector<int>args_pos, args_neg;
         for (int arg : g.inputs) { 
             if (dependencies[abs(arg)][x]) {
-                LOG(4,"pos: " << arg << std::endl)
                 args_pos.push_back(arg);
             } else {
                 args_neg.push_back(arg);
-                LOG(4,"neg: " << arg << std::endl)
             }
         }
         
-        if (args_pos.size()==0)
+        if (args_pos.size()==0) {
             return gate; // the quantified variable doesn't occur, just drop quantifier
+        }
         else {
             int newarg;
             if (args_pos.size()==1) {
                     // push quantifier into the only dependent argument
-                    // take care of negations
-                Quantifier newq = (args_pos[0]>0 ? q : dualQ(q));
-                newarg = bringitdown(newq, x, abs(args_pos[0]), dependencies);
-                newarg = (args_pos[0]>0 ? newarg : -newarg);
+                newarg = bringitdown(q, x, args_pos[0], dependencies);
             }
-            else {// make a new gate for the dependent arguments
+            else {// make two new gates for the dependent arguments
                 newarg = addGate(Gate(g.output, args_pos));
                 newarg = addGate(Gate(Quant2Conn(q), vector<int>({x}), vector<int>({newarg})));
             }
-            if (args_neg.size()==0)
+            if (args_neg.size()==0) {
                 return newarg;
+            }
             else {
                 args_neg.push_back(newarg);
                 return addGate(Gate(g.output, args_neg));
@@ -477,22 +515,10 @@ int Circuit::bringitdown(Quantifier q, int x, int gate, const vector<varset>& de
 
     if (g.output==All || g.output==Ex) {
         if (g.output == Quant2Conn(q)) { // push new quantifier through the (same) old quantifier
-            Quantifier newq = (g.inputs[0]>0 ? q : dualQ(q));
-            int new_arg = bringitdown(newq, x, abs(g.inputs[0]), dependencies);
-            if (new_arg > maxVar() && getGate(new_arg).output == Quant2Conn(newq)) {
-                // combine both quantifiers
-                vector<int> newx(g.quants);
-                newx.push_back(x);
-                new_arg = getGate(new_arg).inputs[0];
-                new_arg = (g.inputs[0]>0 ? new_arg : -new_arg);
-                return addGate(Gate(g.output, newx, vector<int>({new_arg})));
-            } else {
-                new_arg = (g.inputs[0]>0 ? new_arg : -new_arg);
-                return addGate(Gate(g.output, g.quants, vector<int>({new_arg})));
-            }
-        } else { // apply quantifier q to gate of opposite quantifier
-            int i = addGate(Gate(Quant2Conn(q), vector<int>({x}), vector<int>({gate})));
-            return i;
+            int new_arg = bringitdown(q, x, g.inputs[0], dependencies);
+            return buildQuant(g.output, g.quants, new_arg);
+        } else { // Just add the quantifier
+            return addGate(Gate(Quant2Conn(q), vector<int>({x}), vector<int>({gate})));
         }
     }
     // all cases should be covered

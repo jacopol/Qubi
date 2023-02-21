@@ -24,7 +24,7 @@ constexpr int DEFAULT_ITERATE = pairwise;
 constexpr int DEFAULT_QUANTBLOCKS = keep;
 constexpr int DEFAULT_PREFIX = prenex;
 constexpr int DEFAULT_WORKERS = 4;
-constexpr int DEFAULT_TABLE   = 30;
+constexpr int DEFAULT_TABLE   = 29;
 
 bool EXAMPLE    = false;
 bool PRINT      = false;
@@ -68,7 +68,7 @@ void usage() {
          << "\t-r, -reorder=<n>: \tvariable reordering: 0=none, 1=dfs (*), 2=matrix\n"
          << "\t-i, -iterate=<n>: \tevaluate and/or: 0=left-to-right, 1=pairwise (*)\n"
          << "\t-g, -gc: \t\tswitch on garbage collection (experimental)\n"
-         << "\t-t, -table=<n>: \tBDD: set max table size to 2^n, n in [15..42], 30=(*)\n"
+         << "\t-t, -table=<n>: \tBDD: set max table size to 2^n, n in [15..42], 29=(*)\n"
          << "\t-w, -workers=<n>: \tBDD: use n threads, n in [0..64], 0=#cores, 4=(*)\n"
          << "\t-v, -verbose=<n>: \tverbose level (0=quiet, 1=normal (*), 2=verbose, 3=debug)\n"
          << "\t-h, -help: \t\tthis usage message\n"
