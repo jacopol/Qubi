@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <assert.h>
+#include <algorithm>
 #include "circuit.hpp"
 #include "settings.hpp"
 #include "messages.hpp"
@@ -89,7 +90,6 @@ Quantifier dualQ(Quantifier q) {
 // keep track of pos/neg sign
 void Circuit::gather(int gate, int sign, vector<int>& args) {
     Gate g = getGate(gate);
-    assert(g.output == And || g.output == Or);
     for (int arg : g.inputs) {
         if (abs(arg) < maxvar) {
             args.push_back(arg * sign);
@@ -109,15 +109,22 @@ void Circuit::gather(int gate, int sign, vector<int>& args) {
 // Flatten and/or starting in matrix, starting from gate. 
 // This operation proceeds recursively, and completely in-situ.
 // Note: after this operation, the matrix may have unused gates
+// TODO: need cache/marking?
 
 void Circuit::flatten_rec(int gate) {
     assert(gate>0);
     if (gate >= maxVar()) {
-        vector<int> newgates;
         Gate &g = matrix[gate-maxvar]; // cannot use getGate since we will update g
-        gather(gate, 1, newgates);
-        g.inputs = newgates;
-        for (int arg : newgates) flatten_rec(abs(arg));
+        if (g.output==And || g.output==Or) {
+            vector<int> newgates;
+            gather(gate, 1, newgates);
+            g.inputs = newgates;
+            for (int arg : newgates) flatten_rec(abs(arg));
+        }
+        else if (g.output==All || g.output==Ex) {
+            flatten_rec(abs(g.inputs[0]));
+        }
+        else assert(false);
     }
 }
 
@@ -529,7 +536,20 @@ Circuit& Circuit::miniscope() {
     LOG(1,"Moving quantifiers inside (early quantification)" << std::endl);
     while (maxBlock()>1) {
         Block b = prefix.back();
-        for (int var : b.variables) {
+        vector<int> xs = b.variables;
+        if (abs(output)>=maxVar()) { // we will sort the xs based on how many input-gates of the output depend on them.
+            vector<varset>deps = posneg();
+            const vector<int> &args = getGate(abs(output)).inputs;
+            auto f = [&deps, &args](int x) { // This function computes how many args depend on x
+                int count=0;
+                for (int arg : args)
+                    if (deps[arg][x]) count++;
+                return count;
+            };
+            const auto cmp = [&f](int a, int b) { return f(a) < f(b); };
+            std::stable_sort(xs.begin(), xs.end(), cmp);       
+        }
+        for (int var : xs) {
             output = bringitdown(b.quantifier, var, output, posneg());
             cleanup_matrix();
         }

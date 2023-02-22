@@ -122,7 +122,7 @@ bool parseOption(string& arg) {
     if (arg == "-example" || arg == "-e") { EXAMPLE = true; return true; }
     if (arg == "-print"   || arg == "-p") { PRINT   = true; return true; }
     if (arg == "-keep"    || arg == "-k") { KEEPNAMES = true; return true; }
-    if (arg == "-flatten" || arg == "-f") { FLATTEN = true; return true; }
+    if (arg == "-flatten" || arg == "-f") { FLATTEN = true; CLEANUP = true; return true; }
     if (arg == "-cleanup" || arg == "-c") { CLEANUP = true; return true; }
     if (arg == "-quant"   || arg == "-q") { QUANTBLOCKS = checkInt(arg,val,0,2); return true; }
     if (arg == "-prefix"  || arg == "-x") { PREFIX = checkInt(arg,val,0,2); return true; }
@@ -185,14 +185,15 @@ int main(int argc, char *argv[]) {
     if (QUANTBLOCKS==combine) qbf.combine();
     if (FLATTEN) qbf.flatten();
     if (CLEANUP) qbf.cleanup();
-    if (VERBOSE>=1 && (FLATTEN || CLEANUP || QUANTBLOCKS>0)) qbf.printInfo(cerr);
+    if (VERBOSE>=1 && (CLEANUP || QUANTBLOCKS>0)) qbf.printInfo(cerr);
     if (REORDER==dfs) qbf.reorderDfs();
     if (REORDER==matrix) qbf.reorderMatrix();
-    if (PREFIX==circuit) qbf.prefix2circuit();
-    if (PREFIX==miniscope) qbf.miniscope();
-    if (VERBOSE>=1 && PREFIX>0) qbf.printInfo(cerr);
-    
-    // qbf.posneg(); // experimental
+    if (PREFIX>0) {
+        if (PREFIX==circuit) qbf.prefix2circuit();
+        if (PREFIX==miniscope) qbf.miniscope();
+        if (VERBOSE>=1) qbf.printInfo(cerr);
+    }
+
     if (PRINT) {
         qbf.writeQcir(cout);
     } else {
