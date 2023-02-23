@@ -447,7 +447,7 @@ int Circuit::bringitdown(Quantifier q, int x, int gate, const vector<varset>& de
     if (gate<0) { // handle negative edges by dual quantifier
         return -bringitdown(dualQ(q), x, -gate, dependencies); 
     }
-
+    // below this line gate>0
     if (gate < maxVar()) { // the gate is a single input variable (leaf of circuit)
         LOG(3,"- Eliminating " << Qtext[q] << " " << varString(x) 
             << " over input " << varString(gate) << std::endl);

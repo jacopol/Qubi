@@ -105,12 +105,12 @@ void Solver::matrix2bdd() {
 
         if (GARBAGE) {
             set<int> garbage = cleanup[i-c.maxVar()];
-            if (garbage.size()>0) LOG(3, " (garbage:");
+            if (garbage.size()>0) LOG(3, " [garbage:");
             for (int j : garbage) { // Do the cleanup
                 bdds[j] = Sylvan_Bdd(false);
                 LOG(3, " " << c.varString(j))
             }
-            if (garbage.size()>0) LOG(3,")");
+            if (garbage.size()>0) LOG(3,"]");
         }
 
         Sylvan_Bdd bdd(false);
@@ -124,7 +124,8 @@ void Solver::matrix2bdd() {
             bdd = args[0].UnivAbstract(g.quants);
         else
             assert(false);
-        LOG(2," (" << bdd.NodeCount() << " nodes)" << endl);
+        if (STATISTICS) { LOG(2," (" << bdd.NodeCount() << " nodes)"); }
+        LOG(2, endl);
         bdds.push_back(bdd);
     }
     matrix = toBdd(c.getOutput()); // final result
@@ -144,6 +145,7 @@ void Solver::prefix2bdd() {
             matrix = matrix.UnivAbstract(b.variables);
         else
             matrix = matrix.ExistAbstract(b.variables);
-        LOG(2,"(" << matrix.NodeCount() << " nodes)" << endl);
+        if (STATISTICS) { LOG(2," (" << matrix.NodeCount() << " nodes)"); }
+        LOG(2,endl);
     }
 }

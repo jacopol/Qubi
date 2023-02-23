@@ -9,3 +9,4 @@ a.out
 qubi0.1
 Doc/*.aux
 Doc/*.log
+Experiments/*.qcir

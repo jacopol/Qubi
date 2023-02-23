@@ -18,10 +18,8 @@ Solving:
 
 Improvements:
 - statistics: intermediate timing
-- statistics: keep and print peak BDD
-- statistics: compute peak BDD during large and/or (optionally)
 - take care of removed variables in returned example
-- rethink defaults (in particular prefix)
+- rethink defaults (in particular with prefix)
 
 Refactor:
 - refactor: Solver could be an abstract class / interface
@@ -59,3 +57,6 @@ Challenges:
 
 - Benchmarks/Hein/SN_N/hein_02_5x5-11_cp.qcir (matrix)
 - Benchmarks/Hein/SN_N/hein_10_5x5-11_cp.qcir (matrix)
+
+Note: the following could only be solved with -x=2:
+./qubi Benchmarks/Hein/SN_B/hein_09_4x4-07.pg.qdimacs.qcir -e -g -v=2 -s -f -x=2

@@ -37,11 +37,10 @@ public:
 
 /* wrapping sylvan_obj.hpp functions */
 
-    bool  isConstant() const                        { return bdd.isConstant(); }
-    size_t NodeCount() const                        { return bdd.NodeCount(); };
+    bool isConstant() const                         { return bdd.isConstant(); }
     bool operator==(const Sylvan_Bdd& other) const  { return bdd == other.bdd; }
-    Sylvan_Bdd& operator+=(const Sylvan_Bdd& other) { bdd += other.bdd; return *this; }
-    Sylvan_Bdd& operator*=(const Sylvan_Bdd& other) { bdd *= other.bdd; return *this; }
+    Sylvan_Bdd& operator+=(const Sylvan_Bdd& other) { bdd += other.bdd; peak(); return *this; }
+    Sylvan_Bdd& operator*=(const Sylvan_Bdd& other) { bdd *= other.bdd; peak(); return *this; }
     Sylvan_Bdd  operator!() const                   { return Sylvan_Bdd(!bdd); }
 
 /* sylvan functions with convenient API */
@@ -55,6 +54,20 @@ public:
     static Sylvan_Bdd bigAnd(const std::vector<Sylvan_Bdd>&);
     static Sylvan_Bdd bigOr(const std::vector<Sylvan_Bdd>&);
 
+/* statistics */
+
+    size_t NodeCount() const                        { return bdd.NodeCount(); };
+
+    const Sylvan_Bdd& peak() {
+        if (STATISTICS) { 
+            int count = NodeCount();
+            if (count > PEAK) {
+                PEAK = count;
+                LOG(1, "[peak " << PEAK << "]");
+            }
+        }
+        return *this;
+    }
 
 private:
 

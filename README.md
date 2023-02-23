@@ -35,6 +35,7 @@ _Output:_  solving:   [TRUE | FALSE] : the solution of the QBF + (counter)exampl
     -t, -table=<n>:         BDD: set max table size to 2^n, n in [15..42], 29=(*)
     -w, -workers=<n>:       BDD: use n threads, n in [0..64], 0=#cores, 4=(*)
     -v, -verbose=<n>:       verbose level (0=quiet, 1=normal (*), 2=verbose, 3=debug)
+    -s, -stats:             turn statistics on (leads to slow-down)
     -h, -help:              this usage message
     (*) = default values
 

@@ -40,6 +40,9 @@ int WORKERS     = DEFAULT_WORKERS;
 int TABLE       = DEFAULT_TABLE;
 int VERBOSE     = DEFAULT_VERBOSE;
 
+bool STATISTICS = false;
+int PEAK = 0;
+
 string NAME; // = "Test/sat13.qcir"; // for debugging
 
 istream* INFILE;
@@ -71,6 +74,7 @@ void usage() {
          << "\t-t, -table=<n>: \tBDD: set max table size to 2^n, n in [15..42], 29=(*)\n"
          << "\t-w, -workers=<n>: \tBDD: use n threads, n in [0..64], 0=#cores, 4=(*)\n"
          << "\t-v, -verbose=<n>: \tverbose level (0=quiet, 1=normal (*), 2=verbose, 3=debug)\n"
+         << "\t-s, -stats: \t\tturn statistics on (leads to slow-down)\n"
          << "\t-h, -help: \t\tthis usage message\n"
          << "\t(*) = default values"
          << endl;
@@ -124,6 +128,7 @@ bool parseOption(string& arg) {
     if (arg == "-keep"    || arg == "-k") { KEEPNAMES = true; return true; }
     if (arg == "-flatten" || arg == "-f") { FLATTEN = true; CLEANUP = true; return true; }
     if (arg == "-cleanup" || arg == "-c") { CLEANUP = true; return true; }
+    if (arg == "-stats"   || arg == "-s") { STATISTICS = true; return true; }
     if (arg == "-quant"   || arg == "-q") { QUANTBLOCKS = checkInt(arg,val,0,2); return true; }
     if (arg == "-prefix"  || arg == "-x") { PREFIX = checkInt(arg,val,0,2); return true; }
     if (arg == "-iterate" || arg == "-i") { ITERATE = checkInt(arg,val,0,1); return true; }
@@ -207,6 +212,8 @@ int main(int argc, char *argv[]) {
         report_result(qbf, verdict, valuation);
     }
     auto timespent = duration_cast<milliseconds>(system_clock::now() - starttime);
-    LOG(1, "Total time spent: " << timespent.count() << " ms" << endl);
+    LOG(1, "Total time spent: " << timespent.count() << " ms.");
+    if (STATISTICS) { LOG(1, " Peak BDD nodes: " << PEAK); }
+    LOG(1, std::endl);
     return 0;
 }

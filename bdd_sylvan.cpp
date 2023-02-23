@@ -40,12 +40,16 @@ inline Bdd makeCube(const std::vector<int>& variables) {
 
 Sylvan_Bdd Sylvan_Bdd::UnivAbstract(const std::vector<int>& variables)  const {
     Bdd cube = makeCube(variables);
-    return bdd.UnivAbstract(cube);
+    Sylvan_Bdd result(bdd.UnivAbstract(cube));
+    result.peak();
+    return result;
 }
 
 Sylvan_Bdd Sylvan_Bdd::ExistAbstract(const std::vector<int>& variables) const{
     Bdd cube = makeCube(variables);
-    return bdd.ExistAbstract(cube);
+    Sylvan_Bdd result(bdd.ExistAbstract(cube));
+    result.peak();
+    return result;
 }
 
 std::vector<bool> Sylvan_Bdd::PickOneCube(const std::vector<int>& vars) const {

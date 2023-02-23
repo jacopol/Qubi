@@ -49,7 +49,7 @@ public:
 };
 
 // Or: use vector<bool>? Union/Intersection become more cumbersome.
-typedef std::bitset<384UL> varset;
+typedef std::bitset<1024UL> varset;
 
 class Circuit {
 private:
