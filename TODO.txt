@@ -6,6 +6,7 @@ Extensions Input:
 Preprocessing:
 - eliminate pure positive/negative literals
 - early quantification: more heuristics
+- early quantification: should use caching in implementation?
 - transform back to prenex (partially or completely)
 - could transform to positive normal form. (useful?)
 - further simplifications:

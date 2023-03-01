@@ -543,7 +543,7 @@ Circuit& Circuit::miniscope() {
             auto f = [&deps, &args](int x) { // This function computes how many args depend on x
                 int count=0;
                 for (int arg : args)
-                    if (deps[arg][x]) count++;
+                    if (deps[abs(arg)][x]) count++;
                 return count;
             };
             const auto cmp = [&f](int a, int b) { return f(a) < f(b); };
