@@ -95,10 +95,17 @@ void Circuit::gather(int gate, int sign, vector<int>& args) {
             args.push_back(arg * sign);
         }
         else {
-            Connective child = getGate(abs(arg)).output;
-            if (arg > 0 && child == g.output)
+            Gate child = getGate(abs(arg));
+            // adapt output if possible and necessary
+            if (child.inputs.size() == 1) {
+                if (arg > 0 && child.output == dualC(g.output))
+                    matrix[abs(arg)-maxvar].output = g.output;
+                if (arg < 0 && child.output == g.output)
+                    matrix[abs(arg)-maxvar].output = dualC(g.output);
+            }
+            if (arg > 0 && child.output == g.output)
                 gather(arg, sign, args);
-            else if (arg < 0 && child == dualC(g.output)) 
+            else if (arg < 0 && child.output == dualC(g.output)) 
                 gather(-arg, -sign, args);
             else 
                 args.push_back(arg * sign);
