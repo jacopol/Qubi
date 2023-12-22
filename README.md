@@ -58,7 +58,7 @@ Preprocessing (print after combining quantifier blocks, keeping original names)
 
 ## Build:
 
-    g++ *.cpp -o qubi -lsylvan -lpthread
+    g++ *.cpp -o qubi -lsylvan -lpthread -llace
 
 ## Dependencies:
 

@@ -181,6 +181,13 @@ void report_result(const CircuitRW& qbf, bool verdict, const Valuation& valuatio
     }
 }
 
+TASK_2(bool, solve_task, CircuitRW*, qbf, Valuation*, valuation) {   
+    Solver solver(*qbf);
+    bool verdict = solver.solve();
+    if (EXAMPLE) *valuation = solver.example();
+    return verdict;
+}
+
 int main(int argc, char *argv[]) {
     system_clock::time_point starttime = system_clock::now();
     parseArgs(argc, argv);
@@ -204,11 +211,10 @@ int main(int argc, char *argv[]) {
     } else {
         bool verdict;
         Valuation valuation;
-        {   Sylvan_mgr _(WORKERS, TABLE);
-            Solver solver(qbf);
-            verdict = solver.solve();
-            if (EXAMPLE) valuation = solver.example();
-        } // Sylvan_mgr is closed before reporting the results
+        { Sylvan_mgr _(WORKERS, TABLE);
+          verdict = RUN(solve_task, &qbf, &valuation);
+          // Sylvan_mgr is closed automatically
+        }
         report_result(qbf, verdict, valuation);
     }
     auto timespent = duration_cast<milliseconds>(system_clock::now() - starttime);
