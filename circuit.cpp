@@ -96,8 +96,7 @@ void Circuit::gather(int gate, int sign, vector<int>& args) {
         }
         else {
             Gate child = getGate(abs(arg));
-            // adapt output if possible and necessary
-            if (child.inputs.size() == 1) {
+            if (child.inputs.size() == 1) { // note: and(x) <=> or(x), rename if convenient
                 if (arg > 0 && child.output == dualC(g.output))
                     matrix[abs(arg)-maxvar].output = g.output;
                 if (arg < 0 && child.output == g.output)

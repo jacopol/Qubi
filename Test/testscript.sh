@@ -11,7 +11,7 @@ done
 
 for x in s*.qcir q*.qcir; do
     echo $x
-    ../qubi -r -p -k -q $x > OUT/test.qcir
+    ../qubi -r=1 -p -k -q=2 $x > OUT/test.qcir
     diff $x OUT/test.qcir
 done
 
@@ -19,9 +19,9 @@ done
 
 for x in s*.qcir q*.qcir; do
     echo $x
-    ../qubi -e -q $x > OUT/test1.txt
-    ../qubi -r -e -q $x > OUT/test2.txt
-    ../qubi -r -c -e -q $x > OUT/test3.txt
+    ../qubi -e -q=2 $x > OUT/test1.txt
+    ../qubi -r=1 -e -q=2 $x > OUT/test2.txt
+    ../qubi -r=1 -c -e -q=2 $x > OUT/test3.txt
     diff OUT/test1.txt OUT/test2.txt
     diff OUT/test1.txt OUT/test3.txt
 done

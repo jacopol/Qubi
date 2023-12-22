@@ -28,6 +28,10 @@ const array<string,2> Qtext = {"forall", "exists"};
 
 typedef vector<pair<int,bool>> Valuation; // ordered list of pairs var->bool
 
+// A Gate is a logical connective applied to a vector of inputs
+// (negative numbers indicate logical negation)
+// (the connective can be a quantifier with a vector of variables (non-prenex))
+
 class Gate {
 public:
     vector<int> inputs;
@@ -38,6 +42,8 @@ public:
     int operator[](int i) const  { return inputs[i]; }
     int size() const             { return inputs.size(); }
 };
+
+// A Block is a vector of variables with the same quantifier
 
 class Block {
 public:
@@ -50,6 +56,11 @@ public:
 
 // Or: use vector<bool>? Union/Intersection become more cumbersome.
 typedef std::bitset<1024UL> varset;
+
+// A Circuit is a QBF (with sharing) consisting of 
+// - a prefix: a vector of blocks of quantifiers [0..maxvar)
+// - a matrix: a vector of gate definitions, interpreted as  [maxvar..maxvar+size)
+// - output: a designated output gate
 
 class Circuit {
 private:
@@ -75,9 +86,9 @@ public:
     int addVar(string name="");                   // create input variable
     int addGate(const Gate& g, string name="");   // create new gate
 
-    const string& varString(int i) const { return varnames.at(abs(i)); }
-    bool freshName(const string name)   { return allnames.count(name)==0; }
-    const Gate& getGate(int i) const    { return matrix.at(i - maxvar); }
+    const string& varString(int i) const    { return varnames.at(abs(i)); }
+    bool freshName(const string name) const { return allnames.count(name)==0; }
+    const Gate& getGate(int i) const        { return matrix.at(i - maxvar); }
     
     int getOutput() const               { return output; }
     void setOutput(int out)             { output = out; }
