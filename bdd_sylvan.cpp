@@ -10,6 +10,9 @@
 
 using namespace sylvan;
 
+VOID_TASK_0(gc_start) { LOG(2,"[gc..."); }
+VOID_TASK_0(gc_done) { LOG(2,"done]"); }
+
 // start Sylvan, with number of workers, and unique table size 2^size
 Sylvan_mgr::Sylvan_mgr(int workers, int size) {
     LOG(2, "Opening Sylvan BDDs ("
@@ -22,6 +25,10 @@ Sylvan_mgr::Sylvan_mgr(int workers, int size) {
     sylvan_set_sizes(initnodes, maxnodes, initcache, maxcache);
     sylvan_init_package();
     sylvan_init_bdd();
+    if (VERBOSE>=2) {
+        sylvan_gc_hook_pregc(TASK(gc_start)); // message for garbage collection
+        sylvan_gc_hook_postgc(TASK(gc_done)); // message for garbage collection
+    }
 }
 
 Sylvan_mgr::~Sylvan_mgr() {
