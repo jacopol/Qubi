@@ -49,7 +49,7 @@ class Block {
 public:
     Quantifier quantifier;          
     vector<int> variables;
-    Block(Quantifier q, const vector<int>& args) : variables(args), quantifier(q) { }
+    Block(Quantifier q, const vector<int>& args) : quantifier(q), variables(args) { }
     int operator[](int i) const { return variables[i]; }
     int size() const            { return variables.size(); }
 };

@@ -10,8 +10,8 @@
 
 using namespace sylvan;
 
-VOID_TASK_0(gc_start) { LOG(2,"[gc..."); }
-VOID_TASK_0(gc_done) { LOG(2,"done]"); }
+VOID_TASK_0(gc_start) { LOG(2,"[gc.."); }
+VOID_TASK_0(gc_done) { LOG(2,"]"); }
 
 // start Sylvan, with number of workers, and unique table size 2^size
 Sylvan_mgr::Sylvan_mgr(int workers, int size) {
@@ -73,7 +73,7 @@ std::vector<bool> Sylvan_Bdd::PickOneCube(const std::vector<int>& vars) const {
 
     // compute the sorting permutation (index)
     std::vector<int> index;
-    for (int i=0; i<vars.size(); i++) 
+    for (size_t i=0; i<vars.size(); i++) 
         index.push_back(i);
     const auto cmp = [&vars](int a, int b) { return vars[a] < vars[b]; };
     std::sort(index.begin(), index.end(), cmp);
@@ -85,7 +85,7 @@ std::vector<bool> Sylvan_Bdd::PickOneCube(const std::vector<int>& vars) const {
 
     // Apply the reverse sorting permutation (index)
     std::vector<bool> val2 = std::vector<bool>(val1.size(), false);
-    for (int i=0; i<val1.size(); i++)
+    for (size_t i=0; i<val1.size(); i++)
         val2[index[i]] = val1[i];
 
     return val2;

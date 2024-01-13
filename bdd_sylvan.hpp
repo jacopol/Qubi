@@ -60,7 +60,7 @@ public:
 
     const Sylvan_Bdd& peak() {
         if (STATISTICS) { 
-            int count = NodeCount();
+            size_t count = NodeCount();
             if (count > PEAK) {
                 PEAK = count;
                 LOG(1, "[peak " << PEAK << "]");

@@ -32,7 +32,7 @@ string CircuitRW::litString(int literal) const {
 void CircuitRW::commaSeparate(std::ostream& s, const vector<int>& literals) const {
     if (literals.size()>0) 
         s << litString(literals[0]);
-    for (int i=1; i < literals.size(); i++)
+    for (size_t i=1; i < literals.size(); i++)
         s << ", " << litString(literals[i]);
 }
 
@@ -119,7 +119,7 @@ vector<int> CircuitRW::readLiterals(string& line) const {
 bool find_keyword(string& line, const string& keyword) {
     if (keyword.size() > line.size())
         return false;
-    for (int pos=0; pos<keyword.size(); pos++) {
+    for (size_t pos=0; pos<keyword.size(); pos++) {
     if (tolower(line[pos]) != keyword[pos])
         return false;
     }
@@ -129,7 +129,6 @@ bool find_keyword(string& line, const string& keyword) {
 
 // Check and match line as "connective(lit1,...,litn)"
 Gate CircuitRW::readGate(string& line) const {
-    Connective connective;
     for (Connective q : Connectives) {
         string ctext = Ctext[q];
         if (find_keyword(line, ctext))
@@ -164,7 +163,7 @@ bool CircuitRW::readOutput(string& line) {
 
 // Process gate definition "gatename = connective(lit1,...,litn)"
 bool CircuitRW::readGateDef(string& line) {
-    int pos = line.find("=");
+    size_t pos = line.find("=");
     if (pos == string::npos) return false;
     string gatename = line.substr(0, pos);
     line.erase(0, pos+1);

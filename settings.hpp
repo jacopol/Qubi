@@ -16,6 +16,6 @@ extern bool GARBAGE;
 #define LOG(level, msg) { if (level<=VERBOSE) {std::cerr << msg; }}
 
 extern bool STATISTICS;
-extern int PEAK;
+extern size_t PEAK;
 
 #endif // SETTINGS_H

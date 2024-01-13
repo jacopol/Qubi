@@ -53,7 +53,7 @@ Valuation Solver::example() const {
         else
             val = (!matrix).PickOneCube(vars);
         // return the result
-        for (int i=0; i<vars.size(); i++)
+        for (size_t i=0; i<vars.size(); i++)
             valuation.push_back(pair<int,bool>({vars[i], val[i]}));
         return valuation;
     }

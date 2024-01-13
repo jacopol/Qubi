@@ -41,7 +41,7 @@ int TABLE       = DEFAULT_TABLE;
 int VERBOSE     = DEFAULT_VERBOSE;
 
 bool STATISTICS = false;
-int PEAK = 0;
+size_t PEAK = 0;
 
 string NAME; // = "Test/sat13.qcir"; // for debugging
 

@@ -236,7 +236,7 @@ Circuit& Circuit::permute(std::vector<int>& reordering) {
     // compose inverse of reordering with varnames
     {
     vector<string> oldnames(varnames);
-    for (int i=0; i<reordering.size(); i++)
+    for (size_t i=0; i<reordering.size(); i++)
         varnames[reordering[i]] = oldnames[i];
     }
     varnames.resize(maxGate());
@@ -440,7 +440,7 @@ int Circuit::buildQuant(Connective q, const vector<int>& xs, int gate) {
     }
     if (gate < 0 && g.output == dualC(q)) { // combine quantifiers as in Ex xs -(All ys A) => Ex (ys,xs) -A
         vector<int> newx(g.quants);
-        for (int x=0; x<xs.size(); x++) newx.push_back(x); // append(newx,xs)
+        for (size_t x=0; x<xs.size(); x++) newx.push_back(x); // append(newx,xs)
         return addGate(Gate(q, newx, vector<int>({-g.inputs[0]}))); // negation!
     } else {
         return addGate(Gate(q, xs, vector<int>({gate})));
