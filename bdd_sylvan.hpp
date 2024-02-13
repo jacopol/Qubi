@@ -42,7 +42,7 @@ public:
     Sylvan_Bdd& operator+=(const Sylvan_Bdd& other) { bdd += other.bdd; peak(); return *this; }
     Sylvan_Bdd& operator*=(const Sylvan_Bdd& other) { bdd *= other.bdd; peak(); return *this; }
     Sylvan_Bdd  operator!() const                   { return Sylvan_Bdd(!bdd); }
-    Sylvan_Bdd& restrict(const Sylvan_Bdd& other)   { bdd.Restrict(other.bdd); peak(); return *this;  }
+    Sylvan_Bdd restrict(const Sylvan_Bdd& other) const  { return Sylvan_Bdd(bdd.Restrict(other.bdd)); }
 
 /* sylvan functions with convenient API */
 

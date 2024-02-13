@@ -83,7 +83,7 @@ public:
     const Block& getBlock(int i) const  { return prefix.at(i); }
     void addBlock(const Block& b)       { prefix.push_back(b); }
     void addQuant(const Quantifier& q)  { quants.push_back(q); }
-    const Quantifier& quantAt(int i) const{ return quants[i];  }
+    const Quantifier& quantAt(int i) const{ return quants[i-1];  }
 
     // all Vars need to be created before all Gates
     int addVar(string name="");                   // create input variable

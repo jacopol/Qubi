@@ -131,22 +131,21 @@ void Solver::matrix2bdd() {
     matrix = toBdd(c.getOutput()); // final result
 }
 
-void Solver::unitpropogation() {
+void Solver::unitpropagation() {
     vector<Sylvan_Bdd> unitbdds;
     for (int i=1; i<c.maxVar(); i++) {
         if(c.quantAt(i)==Forall){
             continue;
         }
-        Sylvan_Bdd varbdd(i);
-        if(matrix.restrict(!varbdd) == Sylvan_Bdd(false)){
-            unitbdds.push_back(varbdd);
+        if(matrix.restrict(!Sylvan_Bdd(i)) == Sylvan_Bdd(false)){
+            unitbdds.push_back(Sylvan_Bdd(i));
         }
-        else if (matrix.restrict(varbdd) == Sylvan_Bdd(false)){
-            unitbdds.push_back(!varbdd);
+        else if (matrix.restrict(Sylvan_Bdd(i)) == Sylvan_Bdd(false)){
+            unitbdds.push_back(!Sylvan_Bdd(i));
         }
     }
     //TODO: restrict(matrix, x \and y \and z) or restrict(restrict(restrict(matrix,x),y),z)?
-    matrix.restrict(Sylvan_Bdd::bigAnd(unitbdds));
+    matrix = matrix.restrict(Sylvan_Bdd::bigAnd(unitbdds));
 }
 
 
