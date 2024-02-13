@@ -19,7 +19,7 @@ class Solver {
         void prefix2bdd();  // quantifier elimination up to first block
         bool verdict() const;
         void computeCleanup(); // compute when bdds can be cleaned up
-
+        void unitpropogation(); // compute generalized unit clauses and restrict bdd
     public:
         Solver(const Circuit& circuit);
         bool solve();

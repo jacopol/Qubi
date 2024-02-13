@@ -42,6 +42,7 @@ public:
     Sylvan_Bdd& operator+=(const Sylvan_Bdd& other) { bdd += other.bdd; peak(); return *this; }
     Sylvan_Bdd& operator*=(const Sylvan_Bdd& other) { bdd *= other.bdd; peak(); return *this; }
     Sylvan_Bdd  operator!() const                   { return Sylvan_Bdd(!bdd); }
+    Sylvan_Bdd& restrict(const Sylvan_Bdd& other)   { bdd.Restrict(other.bdd); peak(); return *this;  }
 
 /* sylvan functions with convenient API */
 
@@ -53,6 +54,8 @@ public:
 
     static Sylvan_Bdd bigAnd(const std::vector<Sylvan_Bdd>&);
     static Sylvan_Bdd bigOr(const std::vector<Sylvan_Bdd>&);
+
+
 
 /* statistics */
 

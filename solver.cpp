@@ -131,6 +131,24 @@ void Solver::matrix2bdd() {
     matrix = toBdd(c.getOutput()); // final result
 }
 
+void Solver::unitpropogation() {
+    vector<Sylvan_Bdd> unitbdds;
+    for (int i=1; i<c.maxVar(); i++) {
+        Sylvan_Bdd varbdd(i);
+        if(matrix.restrict(!varbdd) == Sylvan_Bdd(false)){
+            //TODO: check for existential literal
+            unitbdds.push_back(varbdd);
+        }
+        else if (matrix.restrict(varbdd) == Sylvan_Bdd(false)){
+            //TODO: check for existential literal
+            unitbdds.push_back(!varbdd);
+        }
+    }
+    matrix.restrict(Sylvan_Bdd::bigAnd(unitbdds));
+}
+
+
+
 void Solver::prefix2bdd() {
     LOG(1,"Quantifying Prefix" << endl);
     // Quantify blocks from last to second, unless fully resolved
