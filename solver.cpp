@@ -134,16 +134,18 @@ void Solver::matrix2bdd() {
 void Solver::unitpropogation() {
     vector<Sylvan_Bdd> unitbdds;
     for (int i=1; i<c.maxVar(); i++) {
+        if(c.quantAt(i)==Forall){
+            continue;
+        }
         Sylvan_Bdd varbdd(i);
         if(matrix.restrict(!varbdd) == Sylvan_Bdd(false)){
-            //TODO: check for existential literal
             unitbdds.push_back(varbdd);
         }
         else if (matrix.restrict(varbdd) == Sylvan_Bdd(false)){
-            //TODO: check for existential literal
             unitbdds.push_back(!varbdd);
         }
     }
+    //TODO: restrict(matrix, x \and y \and z) or restrict(restrict(restrict(matrix,x),y),z)?
     matrix.restrict(Sylvan_Bdd::bigAnd(unitbdds));
 }
 

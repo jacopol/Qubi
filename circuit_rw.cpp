@@ -143,7 +143,11 @@ bool CircuitRW::readBlock(string& line) {
     for (Quantifier q : Quantifiers) {
         string qtext = Qtext[q];
         if (find_keyword(line, qtext)) {
-            addBlock(Block(q, declVars(line)));
+            vector<int> vars = declVars(line);
+            addBlock(Block(q, vars));
+            for(int i = 0; i<vars.size(); i++){
+                addQuant(q);
+            }
             return true; // skip other quantifiers
         }
     }

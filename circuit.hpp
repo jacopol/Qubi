@@ -71,6 +71,7 @@ private:
     vector<string> varnames;    // map identifiers to external names, start at 1
     set<string> allnames;       // keeps all known names
     int freshname=0;            // to generate fresh names
+    vector<Quantifier> quants;  // vector of quantifiers for quant(var) lookup
 
 public:
     int maxVar() const                  { return maxvar; }
@@ -81,6 +82,8 @@ public:
 
     const Block& getBlock(int i) const  { return prefix.at(i); }
     void addBlock(const Block& b)       { prefix.push_back(b); }
+    void addQuant(const Quantifier& q)  { quants.push_back(q); }
+    const Quantifier& quantAt(int i) const{ return quants[i];  }
 
     // all Vars need to be created before all Gates
     int addVar(string name="");                   // create input variable
