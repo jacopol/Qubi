@@ -132,6 +132,9 @@ void Solver::matrix2bdd() {
     matrix = toBdd(c.getOutput()); // final result
 }
 
+
+//TODO: the algorithm correctly identifies unit clauses, but the resulting assignment is not necessarily correct.
+//      Need to debug the last part
 void Solver::unitpropagation() {
     vector<Sylvan_Bdd> unitbdds;
     for (int i=1; i< c.maxVar(); i++) {
@@ -148,8 +151,7 @@ void Solver::unitpropagation() {
     //TODO: restrict(matrix, x \and y \and z) or restrict(restrict(restrict(matrix,x),y),z)?
     for(int j = 0; j< unitbdds.size(); j++){
         matrix = matrix.restrict(unitbdds[j]);
-        //TODO: make sure to restrict the circuit also somehow... 
-        //      the algorithm correctly identifies unit clauses, but leads to an incorrect example in the output
+
     }
 }
 
