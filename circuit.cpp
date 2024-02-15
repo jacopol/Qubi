@@ -8,10 +8,11 @@
 #include "settings.hpp"
 #include "messages.hpp"
 
-int Circuit::addVar(string name) {
+int Circuit::addVar(Quantifier q, string name) {
     assert(matrix.size()==0); // must create all variables before any gate exists
     if (name=="") name = string("?" + to_string(freshname++));
     varnames.push_back(name);
+    quants.push_back(q);
     allnames.insert(name);
     return maxvar++;
 }
@@ -236,10 +237,16 @@ Circuit& Circuit::permute(std::vector<int>& reordering) {
     // compose inverse of reordering with varnames
     {
     vector<string> oldnames(varnames);
-    for (size_t i=0; i<reordering.size(); i++)
+    vector<Quantifier> oldquants(quants);
+
+    for (size_t i=0; i<reordering.size(); i++){
         varnames[reordering[i]] = oldnames[i];
+        quants[reordering[i] -1] = oldquants[i-1]; //TODO: index quants at 1 similar to varnames
+    }
     }
     varnames.resize(maxGate());
+
+    
 
     // Apply the reordering ...
     const auto reorder = [&](int& x) {

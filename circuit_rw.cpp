@@ -74,13 +74,13 @@ const string variable("[a-zA-z0-9_]+");
 const string literal("-?" + variable);
 
 // Note: currently, we allow any separators, not just ','
-vector<int> CircuitRW::declVars(string &line) {
+vector<int> CircuitRW::declVars(Quantifier q, string&line) {
     vector<int> result;
     smatch m;
     while (regex_search(line, m, regex(variable))) {
         string var = m[0];
         assertThrow(freshName(var), VarDefined(var,lineno));
-        int i = addVar(var);
+        int i = addVar(q, var);
         vars[var] = i;
         result.push_back(i);
         line = m.suffix();
@@ -143,11 +143,9 @@ bool CircuitRW::readBlock(string& line) {
     for (Quantifier q : Quantifiers) {
         string qtext = Qtext[q];
         if (find_keyword(line, qtext)) {
-            vector<int> vars = declVars(line);
+            vector<int> vars = declVars(q, line);
             addBlock(Block(q, vars));
-            for(int i = 0; i<vars.size(); i++){
-                addQuant(q);
-            }
+  
             return true; // skip other quantifiers
         }
     }

@@ -15,6 +15,7 @@ Solver::Solver(const Circuit& circuit) : c(circuit), matrix(false) { }
 
 bool Solver::solve() {
     matrix2bdd();
+    unitpropagation();
     prefix2bdd();
     return verdict();
 }
@@ -133,7 +134,7 @@ void Solver::matrix2bdd() {
 
 void Solver::unitpropagation() {
     vector<Sylvan_Bdd> unitbdds;
-    for (int i=1; i<c.maxVar(); i++) {
+    for (int i=1; i< c.maxVar(); i++) {
         if(c.quantAt(i)==Forall){
             continue;
         }
@@ -145,7 +146,11 @@ void Solver::unitpropagation() {
         }
     }
     //TODO: restrict(matrix, x \and y \and z) or restrict(restrict(restrict(matrix,x),y),z)?
-    matrix = matrix.restrict(Sylvan_Bdd::bigAnd(unitbdds));
+    for(int j = 0; j< unitbdds.size(); j++){
+        matrix = matrix.restrict(unitbdds[j]);
+        //TODO: make sure to restrict the circuit also somehow... 
+        //      the algorithm correctly identifies unit clauses, but leads to an incorrect example in the output
+    }
 }
 
 

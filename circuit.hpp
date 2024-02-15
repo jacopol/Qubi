@@ -78,7 +78,8 @@ public:
     int maxBlock() const                { return prefix.size(); }
     int maxGate() const                 { return matrix.size() + maxvar; }
 
-    Circuit() : varnames({""})          { } // var ids start from 1
+    Circuit() : varnames({""})          {  } // var ids start from 1
+
 
     const Block& getBlock(int i) const  { return prefix.at(i); }
     void addBlock(const Block& b)       { prefix.push_back(b); }
@@ -86,7 +87,7 @@ public:
     const Quantifier& quantAt(int i) const{ return quants[i-1];  }
 
     // all Vars need to be created before all Gates
-    int addVar(string name="");                   // create input variable
+    int addVar(Quantifier q, string name="");                   // create input variable
     int addGate(const Gate& g, string name="");   // create new gate
 
     const string& varString(int i) const    { return varnames.at(abs(i)); }

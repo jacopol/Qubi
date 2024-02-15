@@ -26,7 +26,7 @@ class CircuitRW : public Circuit {
         string outputline;          // save outputline
         int outputlineno;           // save line number of outputline
 
-        vector<int> declVars(string& vars);
+        vector<int> declVars(Quantifier q, string& vars);
         
         int getIndex(const string& ident) const;
         int readLiteral(const string& line) const;        
