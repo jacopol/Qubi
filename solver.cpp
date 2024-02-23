@@ -133,8 +133,7 @@ void Solver::matrix2bdd() {
 }
 
 
-//TODO: the algorithm correctly identifies unit clauses, but the resulting assignment is not necessarily correct.
-//      Need to debug the last part
+
 void Solver::unitpropagation() {
     vector<Sylvan_Bdd> unitbdds;
     for (int i=1; i< c.maxVar(); i++) {
@@ -143,16 +142,18 @@ void Solver::unitpropagation() {
         }
         if(matrix.restrict(!Sylvan_Bdd(i)) == Sylvan_Bdd(false)){
             unitbdds.push_back(Sylvan_Bdd(i));
+            restricted_vars.push_back(i);
         }
         else if (matrix.restrict(Sylvan_Bdd(i)) == Sylvan_Bdd(false)){
             unitbdds.push_back(!Sylvan_Bdd(i));
+            restricted_vars.push_back(-i);
         }
     }
     //TODO: restrict(matrix, x \and y \and z) or restrict(restrict(restrict(matrix,x),y),z)?
     for(int j = 0; j< unitbdds.size(); j++){
         matrix = matrix.restrict(unitbdds[j]);
-
     }
+
 }
 
 
@@ -169,9 +170,19 @@ void Solver::prefix2bdd() {
         LOG(2,"- block " << i+1 << " (" << b.size() << "x " << Qtext[b.quantifier] << "): ");
         if (b.quantifier == Forall)
             matrix = matrix.UnivAbstract(b.variables);
-        else
-            matrix = matrix.ExistAbstract(b.variables);
+        else{
+            vector<int> variables = b.variables;
+            //Only apply 'exists' to variables, where we haven't already applied 'restrict'
+            for(int j = 0; j < restricted_vars.size(); j++){
+                variables.erase(std::remove(variables.begin(),variables.end(),restricted_vars[j]),variables.end());
+            }
+
+            matrix = matrix.ExistAbstract(variables);
+        }
         if (STATISTICS) { LOG(2," (" << matrix.NodeCount() << " nodes)"); }
         LOG(2,endl);
+
+
+        //TODO: call unitpopagation again?
     }
 }

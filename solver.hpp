@@ -14,6 +14,7 @@ class Solver {
         Sylvan_Bdd matrix;  // keeps current state of algorithm
         vector<std::set<int>> cleanup; // bdds that can be cleaned up at each stage
 
+        vector<int> restricted_vars; // Variables set to a constant under a 'restrict' operation
         // The following functions must be called in this order:
         void matrix2bdd();  // transform all gates up to output to BDD 
         void prefix2bdd();  // quantifier elimination up to first block
