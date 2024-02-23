@@ -54,8 +54,18 @@ Valuation Solver::example() const {
         else
             val = (!matrix).PickOneCube(vars);
         // return the result
-        for (size_t i=0; i<vars.size(); i++)
-            valuation.push_back(pair<int,bool>({vars[i], val[i]}));
+        for (size_t i=0; i<vars.size(); i++){
+            pair<int,bool> res;
+            //remember to consider truth values assigned during unit propagation TODO: clean code
+            for(int j=0; j<restricted_vars.size(); j++){
+                if(vars[i]==abs(restricted_vars[j])){
+                    res = pair<int,bool>({vars[i], restricted_vars[j] > 0}); break;
+                }
+                else
+                    res = pair<int,bool>({vars[i], val[i]});
+            }
+            valuation.push_back(res);
+        }
         return valuation;
     }
 }
@@ -171,13 +181,7 @@ void Solver::prefix2bdd() {
         if (b.quantifier == Forall)
             matrix = matrix.UnivAbstract(b.variables);
         else{
-            vector<int> variables = b.variables;
-            //Only apply 'exists' to variables, where we haven't already applied 'restrict'
-            for(int j = 0; j < restricted_vars.size(); j++){
-                variables.erase(std::remove(variables.begin(),variables.end(),restricted_vars[j]),variables.end());
-            }
-
-            matrix = matrix.ExistAbstract(variables);
+            matrix = matrix.ExistAbstract(b.variables);
         }
         if (STATISTICS) { LOG(2," (" << matrix.NodeCount() << " nodes)"); }
         LOG(2,endl);
