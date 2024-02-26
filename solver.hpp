@@ -21,6 +21,9 @@ class Solver {
         bool verdict() const;
         void computeCleanup(); // compute when bdds can be cleaned up
         void unitpropagation(); // compute generalized unit clauses and restrict bdd
+        vector<int> polarity(); // polarity of variables, 1 (or 0) indicates positively (or negatively) pure literals,
+                                // -2 indicates unitialized, -1 indicates non-pure literal
+        void pureLitElim();
     public:
         Solver(const Circuit& circuit);
         bool solve();

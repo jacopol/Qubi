@@ -15,7 +15,7 @@ Solver::Solver(const Circuit& circuit) : c(circuit), matrix(false) { }
 
 bool Solver::solve() {
     matrix2bdd();
-    unitpropagation();
+    //unitpropagation();
     prefix2bdd();
     return verdict();
 }
@@ -142,8 +142,48 @@ void Solver::matrix2bdd() {
     matrix = toBdd(c.getOutput()); // final result
 }
 
+void updatePolarity(vector<int> polarity, int v, int pol){
+    if(polarity[v] == -2)
+        polarity[v] = pol; 
+    else if(polarity[v] != pol) //only set to -1 if non-pure
+        polarity[v] = -1;
+}
+vector<int> Solver::polarity(){
+    vector<int> polarity;
+    for(int i = 1; i<c.maxVar();i++)
+        polarity.push_back(-2);
+    for(int i =1; i<c.maxVar(); i++){
+        if(matrix.restrict(Sylvan_Bdd(i)) == Sylvan_Bdd(true)) updatePolarity(polarity, i, 1);
+        else if(matrix.restrict(!Sylvan_Bdd(i)) == Sylvan_Bdd(true)) updatePolarity(polarity, i, 0);
+        else if(matrix.restrict(!Sylvan_Bdd(i)) == matrix.UnivAbstract({i})) updatePolarity(polarity, i, 1);
+        else if(matrix.restrict(Sylvan_Bdd(i)) == matrix.UnivAbstract({i})) updatePolarity(polarity, i, 0);
+        else updatePolarity(polarity, i, !polarity[i]);
+    }
+    return polarity;
+}
+// TODO: Is this useful in non-CNF setting?
+void Solver::pureLitElim(){
+    bool pureVar = true;
+    while (pureVar){ //repeat until fixpoint
+        vector<int> pol = polarity();
+        Sylvan_Bdd polBdd = Sylvan_Bdd(true);
+        pureVar = false;
+        for(int v = 0; v< pol.size(); v++){
+            if(pol[v] != -2 && pol[v] != -1){
+                pureVar = true;
+                // Remove universal literals from clauses and remove clauses containing existential literals
+                if((c.quantAt(v)==Forall && pol[v]==0) || (c.quantAt(v)==Exists && pol[v]==1)){
+                    polBdd *= Sylvan_Bdd(v); restricted_vars.push_back(v);
+                } else{
+                    polBdd *= !Sylvan_Bdd(v); restricted_vars.push_back(-v);    
+                } 
+            }
+        }
+        matrix = matrix.restrict(polBdd);
+    }
+}
 
-
+//TODO: generalize to allow unitpropagation on subcircuits (take a bdd as argument)
 void Solver::unitpropagation() {
     vector<Sylvan_Bdd> unitbdds;
     for (int i=1; i< c.maxVar(); i++) {
@@ -180,9 +220,8 @@ void Solver::prefix2bdd() {
         LOG(2,"- block " << i+1 << " (" << b.size() << "x " << Qtext[b.quantifier] << "): ");
         if (b.quantifier == Forall)
             matrix = matrix.UnivAbstract(b.variables);
-        else{
+        else
             matrix = matrix.ExistAbstract(b.variables);
-        }
         if (STATISTICS) { LOG(2," (" << matrix.NodeCount() << " nodes)"); }
         LOG(2,endl);
 
