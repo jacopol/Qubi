@@ -44,6 +44,10 @@ public:
     Sylvan_Bdd  operator!() const                   { return Sylvan_Bdd(!bdd); }
     Sylvan_Bdd restrict(const Sylvan_Bdd& other) const  { return Sylvan_Bdd(bdd.Restrict(other.bdd)); }
 
+    int getRootVar() const                             { return bdd.TopVar(); }
+    Sylvan_Bdd hi() const                           { return Sylvan_Bdd(bdd.Then()); }
+    Sylvan_Bdd lo() const                           { return Sylvan_Bdd(bdd.Else()); }
+
 /* sylvan functions with convenient API */
 
     Sylvan_Bdd UnivAbstract(const std::vector<int>& variables) const;

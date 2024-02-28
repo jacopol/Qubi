@@ -15,7 +15,7 @@ Solver::Solver(const Circuit& circuit) : c(circuit), matrix(false) { }
 
 bool Solver::solve() {
     matrix2bdd();
-    //unitpropagation();
+    unitpropagation();
     prefix2bdd();
     return verdict();
 }
@@ -138,6 +138,9 @@ void Solver::matrix2bdd() {
         if (STATISTICS) { LOG(2," (" << bdd.NodeCount() << " nodes)"); }
         LOG(2, endl);
         bdds.push_back(bdd);
+        // If there are no more or-gates (can be checked by linear run through remaining gates): unit propagataion on subBDD secures logical equivalence.
+        // Should also be the case when the matrix can include for Exist- and Forall-gates (i.e. when miniscoping) due to the logical equivalence upheld when miniscoping.
+        // Perhaps a transformation of the matrix into NNF would help?
     }
     matrix = toBdd(c.getOutput()); // final result
 }
@@ -188,22 +191,69 @@ void Solver::unitpropagation() {
     vector<Sylvan_Bdd> unitbdds;
     for (int i=1; i< c.maxVar(); i++) {
         if(c.quantAt(i)==Forall){
-            continue;
+                continue;
         }
         if(matrix.restrict(!Sylvan_Bdd(i)) == Sylvan_Bdd(false)){
-            unitbdds.push_back(Sylvan_Bdd(i));
+            matrix = matrix.restrict(Sylvan_Bdd(i));
             restricted_vars.push_back(i);
         }
         else if (matrix.restrict(Sylvan_Bdd(i)) == Sylvan_Bdd(false)){
-            unitbdds.push_back(!Sylvan_Bdd(i));
+            matrix = matrix.restrict(!Sylvan_Bdd(i));
             restricted_vars.push_back(-i);
         }
     }
-    //TODO: restrict(matrix, x \and y \and z) or restrict(restrict(restrict(matrix,x),y),z)?
-    for(int j = 0; j< unitbdds.size(); j++){
-        matrix = matrix.restrict(unitbdds[j]);
-    }
 
+}
+
+
+std::map<int, bool> detectUnitLits(Sylvan_Bdd bdd) {
+
+    enum Unit {UnitTrue, UnitFalse, NotUnit};
+
+    map<int, Unit> isUnitMap;
+
+    // DFS search of the BDD starting from root
+    // For every node, if lo(n) or hi(n) is BDD_FALSE, then the corresponding variable might be a unit literal
+    // If all nodes corresponding to variable v have either lo(n) == FALSE or hi(n)==FALSE, then v is in fact a unit literal
+
+    set<Sylvan_Bdd> visited;
+    vector<Sylvan_Bdd> todo({bdd});
+    while (todo.size()!=0) {
+        Sylvan_Bdd b = todo.back(); todo.pop_back();
+        if (visited.count(b)==0) { 
+            visited.insert(b);
+            if(b==Sylvan_Bdd(false) || b== Sylvan_Bdd(true)) continue; //ignore leaves
+            if(b.lo()==Sylvan_Bdd(false)){
+                map<int,Unit>::iterator v = isUnitMap.find(b.getRootVar());
+                if(v == isUnitMap.end())
+                    isUnitMap.insert({b.getRootVar(), UnitTrue});
+                else if(v->second ==UnitFalse){
+                    isUnitMap.erase(b.getRootVar());
+                    isUnitMap.insert({b.getRootVar(), NotUnit});
+                }
+            } else if(b.hi() == Sylvan_Bdd(true)){
+                map<int,Unit>::iterator v = isUnitMap.find(b.getRootVar());
+                if(v == isUnitMap.end())
+                    isUnitMap.insert({b.getRootVar(), UnitFalse});
+                else if(v->second ==UnitTrue){
+                    isUnitMap.erase(b.getRootVar());
+                    isUnitMap.insert({b.getRootVar(), NotUnit});
+                }
+            }
+            todo.push_back(b.lo());
+            todo.push_back(b.hi());
+        }
+    }
+    // Return a map of variables to its value
+    map<int, bool> unitLits;
+    map<int, Unit>::iterator it;
+    for (it = isUnitMap.begin(); it != isUnitMap.end(); it++){
+            if(it->second==UnitFalse)
+                unitLits.insert({it->first,false});
+            if(it->second==UnitTrue)
+                unitLits.insert({it->first,true});
+    }
+    return unitLits;
 }
 
 
