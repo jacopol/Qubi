@@ -15,7 +15,7 @@ Solver::Solver(const Circuit& circuit) : c(circuit), matrix(false) { }
 
 bool Solver::solve() {
     matrix2bdd();
-    unitpropagation(matrix);
+    //matrix = unitpropagation(matrix);
     prefix2bdd();
     return verdict();
 }
@@ -197,12 +197,12 @@ std::map<int, bool> Solver::detectUnitLits(Sylvan_Bdd bdd) {
     // For every node, if lo(n) or hi(n) is BDD_FALSE, then the corresponding variable might be a unit literal
     // If all nodes corresponding to variable v have either lo(n) == FALSE or hi(n)==FALSE, then v is in fact a unit literal
 
-    std::vector<Sylvan_Bdd> visited;
-    vector<Sylvan_Bdd> todo({bdd});
+    std::set<Sylvan_Bdd> visited; //TODO: can we use a std::set instead? Gives O(log n) lookup time rather than O(n).
+    vector<Sylvan_Bdd> todo({bdd}); 
     while (todo.size()!=0) {
         Sylvan_Bdd b = todo.back(); todo.pop_back();
-        if (std::find(visited.begin(), visited.end(), b) == visited.end()){ // Node has not yet been visited
-            visited.push_back(b);
+        if (visited.count(b)==0){ // Node has not yet been visited
+            visited.insert(b);
             if(b==Sylvan_Bdd(false) || b== Sylvan_Bdd(true)) continue; //ignore leaves
 
             todo.push_back(b.lo());
@@ -278,7 +278,7 @@ Sylvan_Bdd Solver::unitpropagation(Sylvan_Bdd bdd) {
     vector<Sylvan_Bdd> unitbdds; //TODO: restrict(matrix, (x\land y\land z)) or restrict(restrict(restrict(matrix,x),y),z)?
     for(it = units.begin(); it != units.end(); it++){
         unitbdds.push_back(it->second ? Sylvan_Bdd(it->first) : !Sylvan_Bdd(it->first));
-        restricted_vars.push_back(it->second ? it->first : -(it->first));
+        restricted_vars.push_back(it->second ? it->first : -(it->first)); cout << "Unit literal:" << it->first<<"\n";
     }
     for(int i = 0; i < unitbdds.size(); i++){
         bdd = bdd.restrict(unitbdds[i]); 
@@ -307,6 +307,6 @@ void Solver::prefix2bdd() {
         LOG(2,endl);
 
 
-        //TODO: call unitpopagation again?
+        //matrix = unitpropagation(matrix);
     }
 }

@@ -39,10 +39,12 @@ public:
 
     bool isConstant() const                         { return bdd.isConstant(); }
     bool operator==(const Sylvan_Bdd& other) const  { return bdd == other.bdd; }
+    bool operator<(const Sylvan_Bdd& other) const   { return bdd < other.bdd;  }
     Sylvan_Bdd& operator+=(const Sylvan_Bdd& other) { bdd += other.bdd; peak(); return *this; }
     Sylvan_Bdd& operator*=(const Sylvan_Bdd& other) { bdd *= other.bdd; peak(); return *this; }
     Sylvan_Bdd  operator!() const                   { return Sylvan_Bdd(!bdd); }
     Sylvan_Bdd restrict(const Sylvan_Bdd& other) const  { return Sylvan_Bdd(bdd.Restrict(other.bdd)); }
+    
 
     int getRootVar() const                             { return bdd.TopVar(); }
     Sylvan_Bdd hi() const                           { return Sylvan_Bdd(bdd.Then()); }
