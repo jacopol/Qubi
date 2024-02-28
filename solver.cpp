@@ -15,7 +15,7 @@ Solver::Solver(const Circuit& circuit) : c(circuit), matrix(false) { }
 
 bool Solver::solve() {
     matrix2bdd();
-    unitpropagation();
+    unitpropagation(matrix);
     prefix2bdd();
     return verdict();
 }
@@ -254,7 +254,7 @@ std::map<int, bool> detectUnitLits(Sylvan_Bdd bdd) {
 
 
 //TODO: generalize to allow unitpropagation on subcircuits (take a bdd as argument)
-void Solver::unitpropagation() {
+Sylvan_Bdd Solver::unitpropagation(Sylvan_Bdd bdd) {
     /*
     vector<Sylvan_Bdd> unitbdds;
     for (int i=1; i< c.maxVar(); i++) {
@@ -272,7 +272,7 @@ void Solver::unitpropagation() {
             restricted_vars.push_back(-i);
         }
     }*/
-    map<int,bool> units = detectUnitLits(matrix);
+    map<int,bool> units = detectUnitLits(bdd);
     map<int, bool>::iterator it;
     vector<Sylvan_Bdd> unitbdds; //TODO: restrict(matrix, (x\land y\land z)) or restrict(restrict(restrict(matrix,x),y),z)?
     for(it = units.begin(); it != units.end(); it++){
@@ -280,7 +280,7 @@ void Solver::unitpropagation() {
         restricted_vars.push_back(it->second ? it->first : -(it->first));
     }
     for(int i = 0; i < unitbdds.size(); i++){
-        matrix.restrict(unitbdds[i]); 
+        bdd = bdd.restrict(unitbdds[i]); 
     }
 }
 
