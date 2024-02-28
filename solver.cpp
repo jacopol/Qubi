@@ -282,6 +282,7 @@ Sylvan_Bdd Solver::unitpropagation(Sylvan_Bdd bdd) {
     for(int i = 0; i < unitbdds.size(); i++){
         bdd = bdd.restrict(unitbdds[i]); 
     }
+    return bdd;
 }
 
 
