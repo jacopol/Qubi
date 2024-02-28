@@ -20,6 +20,8 @@ class Solver {
         void prefix2bdd();  // quantifier elimination up to first block
         bool verdict() const;
         void computeCleanup(); // compute when bdds can be cleaned up
+
+        std::map<int, bool> detectUnitLits(Sylvan_Bdd bdd);
         Sylvan_Bdd unitpropagation(Sylvan_Bdd bdd); // compute generalized unit clauses and restrict bdd
         vector<int> polarity(); // polarity of variables, 1 (or 0) indicates positively (or negatively) pure literals,
                                 // -2 indicates unitialized, -1 indicates non-pure literal

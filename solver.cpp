@@ -187,7 +187,7 @@ void Solver::pureLitElim(){
 }
 
 
-std::map<int, bool> detectUnitLits(Sylvan_Bdd bdd) {
+std::map<int, bool> Solver::detectUnitLits(Sylvan_Bdd bdd) {
 
     enum Unit {UnitTrue, UnitFalse, NotUnit};
 
@@ -205,6 +205,10 @@ std::map<int, bool> detectUnitLits(Sylvan_Bdd bdd) {
             visited.push_back(b);
             if(b==Sylvan_Bdd(false) || b== Sylvan_Bdd(true)) continue; //ignore leaves
 
+            todo.push_back(b.lo());
+            todo.push_back(b.hi());
+
+            if(c.quantAt(b.getRootVar())==Forall) continue; // Only consider existential variables
             map<int,Unit>::iterator v = isUnitMap.find(b.getRootVar());
 
             // If v.lo() is BDD_FALSE, then v might be a unit literal, if we haven't previously ruled it out and if we hadn't previously considered not(v) as a unit literal 
@@ -235,9 +239,6 @@ std::map<int, bool> detectUnitLits(Sylvan_Bdd bdd) {
                 isUnitMap.erase(b.getRootVar());
                 isUnitMap.insert({b.getRootVar(), NotUnit});
             }
-
-            todo.push_back(b.lo());
-            todo.push_back(b.hi());
         }
     }
     // Return a map of variables to their unit values
