@@ -186,25 +186,6 @@ void Solver::pureLitElim(){
     }
 }
 
-//TODO: generalize to allow unitpropagation on subcircuits (take a bdd as argument)
-void Solver::unitpropagation() {
-    vector<Sylvan_Bdd> unitbdds;
-    for (int i=1; i< c.maxVar(); i++) {
-        if(c.quantAt(i)==Forall){
-                continue;
-        }
-        if(matrix.restrict(!Sylvan_Bdd(i)) == Sylvan_Bdd(false)){
-            matrix = matrix.restrict(Sylvan_Bdd(i));
-            restricted_vars.push_back(i);
-        }
-        else if (matrix.restrict(Sylvan_Bdd(i)) == Sylvan_Bdd(false)){
-            matrix = matrix.restrict(!Sylvan_Bdd(i));
-            restricted_vars.push_back(-i);
-        }
-    }
-
-}
-
 
 std::map<int, bool> detectUnitLits(Sylvan_Bdd bdd) {
 
@@ -216,12 +197,12 @@ std::map<int, bool> detectUnitLits(Sylvan_Bdd bdd) {
     // For every node, if lo(n) or hi(n) is BDD_FALSE, then the corresponding variable might be a unit literal
     // If all nodes corresponding to variable v have either lo(n) == FALSE or hi(n)==FALSE, then v is in fact a unit literal
 
-    set<Sylvan_Bdd> visited;
+    std::vector<Sylvan_Bdd> visited;
     vector<Sylvan_Bdd> todo({bdd});
     while (todo.size()!=0) {
         Sylvan_Bdd b = todo.back(); todo.pop_back();
-        if (visited.count(b)==0) { 
-            visited.insert(b);
+        if (std::find(visited.begin(), visited.end(), b) == visited.end()){ // Node has not yet been visited
+            visited.push_back(b);
             if(b==Sylvan_Bdd(false) || b== Sylvan_Bdd(true)) continue; //ignore leaves
 
             map<int,Unit>::iterator v = isUnitMap.find(b.getRootVar());
@@ -263,13 +244,46 @@ std::map<int, bool> detectUnitLits(Sylvan_Bdd bdd) {
     map<int, bool> unitLits;
     map<int, Unit>::iterator it;
     for (it = isUnitMap.begin(); it != isUnitMap.end(); it++){
-            if(it->second==UnitFalse)
-                unitLits.insert({it->first,false});
-            if(it->second==UnitTrue)
-                unitLits.insert({it->first,true});
+        if(it->second==UnitFalse)
+            unitLits.insert({it->first,false});
+        if(it->second==UnitTrue)
+            unitLits.insert({it->first,true});
     }
     return unitLits;
 }
+
+
+//TODO: generalize to allow unitpropagation on subcircuits (take a bdd as argument)
+void Solver::unitpropagation() {
+    /*
+    vector<Sylvan_Bdd> unitbdds;
+    for (int i=1; i< c.maxVar(); i++) {
+        if(c.quantAt(i)==Forall){
+                continue;
+        }
+        if(matrix.restrict(!Sylvan_Bdd(i)) == Sylvan_Bdd(false)){
+            cout << "Test 1\n";
+            matrix = matrix.restrict(Sylvan_Bdd(i));
+            restricted_vars.push_back(i);
+        }
+        else if (matrix.restrict(Sylvan_Bdd(i)) == Sylvan_Bdd(false)){
+            cout << "Test 2\n";
+            matrix = matrix.restrict(!Sylvan_Bdd(i));
+            restricted_vars.push_back(-i);
+        }
+    }*/
+    map<int,bool> units = detectUnitLits(matrix);
+    map<int, bool>::iterator it;
+    vector<Sylvan_Bdd> unitbdds; //TODO: restrict(matrix, (x\land y\land z)) or restrict(restrict(restrict(matrix,x),y),z)?
+    for(it = units.begin(); it != units.end(); it++){
+        unitbdds.push_back(it->second ? Sylvan_Bdd(it->first) : !Sylvan_Bdd(it->first));
+        restricted_vars.push_back(it->second ? it->first : -(it->first));
+    }
+    for(int i = 0; i < unitbdds.size(); i++){
+        matrix.restrict(unitbdds[i]); 
+    }
+}
+
 
 
 
