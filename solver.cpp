@@ -223,15 +223,21 @@ std::map<int, bool> detectUnitLits(Sylvan_Bdd bdd) {
         if (visited.count(b)==0) { 
             visited.insert(b);
             if(b==Sylvan_Bdd(false) || b== Sylvan_Bdd(true)) continue; //ignore leaves
-            if(b.lo()==Sylvan_Bdd(false)){
-                map<int,Unit>::iterator v = isUnitMap.find(b.getRootVar());
+
+            map<int,Unit>::iterator v = isUnitMap.find(b.getRootVar());
+            if(b.lo()==Sylvan_Bdd(false)){ 
                 if(v == isUnitMap.end())
                     isUnitMap.insert({b.getRootVar(), UnitTrue});
                 else if(v->second ==UnitFalse){
                     isUnitMap.erase(b.getRootVar());
                     isUnitMap.insert({b.getRootVar(), NotUnit});
                 }
-            } else if(b.hi() == Sylvan_Bdd(true)){
+            } else if(v != isUnitMap.end() && v->second == UnitTrue){
+                isUnitMap.erase(b.getRootVar());
+                isUnitMap.insert({b.getRootVar(), NotUnit});
+            }
+
+            if(b.hi() == Sylvan_Bdd(false)){ 
                 map<int,Unit>::iterator v = isUnitMap.find(b.getRootVar());
                 if(v == isUnitMap.end())
                     isUnitMap.insert({b.getRootVar(), UnitFalse});
@@ -240,6 +246,11 @@ std::map<int, bool> detectUnitLits(Sylvan_Bdd bdd) {
                     isUnitMap.insert({b.getRootVar(), NotUnit});
                 }
             }
+            else if(v != isUnitMap.end() && v->second == UnitFalse){
+                isUnitMap.erase(b.getRootVar());
+                isUnitMap.insert({b.getRootVar(), NotUnit});
+            }
+
             todo.push_back(b.lo());
             todo.push_back(b.hi());
         }
