@@ -225,6 +225,9 @@ std::map<int, bool> detectUnitLits(Sylvan_Bdd bdd) {
             if(b==Sylvan_Bdd(false) || b== Sylvan_Bdd(true)) continue; //ignore leaves
 
             map<int,Unit>::iterator v = isUnitMap.find(b.getRootVar());
+
+            // If v.lo() is BDD_FALSE, then v might be a unit literal, if we haven't previously ruled it out and if we hadn't previously considered not(v) as a unit literal 
+            // If v.lo() is not BDD_FALSE, then v is not a unit literal -- if we already stored it in isUnitMap, we need to update the map to v->NotUnit
             if(b.lo()==Sylvan_Bdd(false)){ 
                 if(v == isUnitMap.end())
                     isUnitMap.insert({b.getRootVar(), UnitTrue});
@@ -237,6 +240,7 @@ std::map<int, bool> detectUnitLits(Sylvan_Bdd bdd) {
                 isUnitMap.insert({b.getRootVar(), NotUnit});
             }
 
+            // The below is symmetric to the above for determining if not(v) is a unit literal
             if(b.hi() == Sylvan_Bdd(false)){ 
                 map<int,Unit>::iterator v = isUnitMap.find(b.getRootVar());
                 if(v == isUnitMap.end())
@@ -255,7 +259,7 @@ std::map<int, bool> detectUnitLits(Sylvan_Bdd bdd) {
             todo.push_back(b.hi());
         }
     }
-    // Return a map of variables to its value
+    // Return a map of variables to their unit values
     map<int, bool> unitLits;
     map<int, Unit>::iterator it;
     for (it = isUnitMap.begin(); it != isUnitMap.end(); it++){
