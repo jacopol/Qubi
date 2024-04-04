@@ -260,6 +260,26 @@ std::map<int, bool> Solver::detectUnitLits(Sylvan_Bdd bdd) {
     return unitLits;
 }
 
+void Solver::bdd2Qcir(std::ostream& s, Sylvan_Bdd bdd) const {
+    s << "#QCIR-G14" << endl;
+    std::set<Sylvan_Bdd> visited;
+    vector<Sylvan_Bdd> todo({bdd}); 
+    //BFS, then output result in reverse order
+    //TODO
+
+    // To compute prefix, make sure to only include those variables, that are in the BDD (could be a smaller set than the ones in the initial circuit)
+    // This can e.g. be done by keeping track of all visited variables in the BFS, thus only adding variables found in the BFS to the prefix
+    // Using the quantAt-function on the original Circuit object, we can easily look up the quantification of a specific variable.
+
+    // Idea: after computing matrix and building some set of found vars, loop over blocks in initial circuit and build prefix using these blocks,
+    // but only including the variables found in the BFS.
+}
+
+void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
+    // same idea as above in terms of building matrix first, prefix second. We do not need to reverse the list of clauses (unlike QCIR, we don't have gates, 
+    // so we don't need to make sure that a gate is declared before it is used as input to some other gate). However, we do need to add the fresh 
+    // "gate variables" to an innermost existential block - adding them to an outer block is not necessarily sound (TODO: why?)
+}
 
 Sylvan_Bdd Solver::unitpropagation(Sylvan_Bdd bdd) {
  
@@ -268,10 +288,10 @@ Sylvan_Bdd Solver::unitpropagation(Sylvan_Bdd bdd) {
     vector<Sylvan_Bdd> unitbdds; //TODO: restrict(matrix, (x\land y\land z)) or restrict(restrict(restrict(matrix,x),y),z)?
     for(it = units.begin(); it != units.end(); it++){
         unitbdds.push_back(it->second ? Sylvan_Bdd(it->first) : !Sylvan_Bdd(it->first));
-        restricted_vars.push_back(it->second ? it->first : -(it->first)); LOG(1,"Detected unit var:" << it->first << endl);
+        restricted_vars.push_back(it->second ? it->first : -(it->first)); 
     }
     for(int i = 0; i < unitbdds.size(); i++){
-        bdd = bdd.restrict(unitbdds[i]); 
+        bdd = bdd.restrict(unitbdds[i]); LOG(1,"Detected unit var:" << it->first << endl);
     }
     return bdd;
 }
@@ -297,6 +317,6 @@ void Solver::prefix2bdd() {
         LOG(2,endl);
 
 
-        matrix = unitpropagation(matrix);
+        //matrix = unitpropagation(matrix);
     }
 }

@@ -26,6 +26,9 @@ class Solver {
         vector<int> polarity(); // polarity of variables, 1 (or 0) indicates positively (or negatively) pure literals,
                                 // -2 indicates unitialized, -1 indicates non-pure literal
         void pureLitElim();
+        void bdd2Qcir(std::ostream&, Sylvan_Bdd) const;
+        void bdd2CNF(std::ostream&, Sylvan_Bdd) const;
+
     public:
         Solver(const Circuit& circuit);
         bool solve();
