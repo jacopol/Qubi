@@ -277,9 +277,51 @@ void Solver::bdd2Qcir(std::ostream& s, Sylvan_Bdd bdd) const {
 
 void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
     // same idea as above in terms of building matrix first, prefix second. We do not need to reverse the list of clauses (unlike QCIR, we don't have gates, 
-    // so we don't need to make sure that a gate is declared before it is used as input to some other gate). However, we do need to add the fresh 
-    // "gate variables" to an innermost existential block - adding them to an outer block is not necessarily sound (TODO: why?)
+    // so we don't need to make sure that a gate is declared before it is used as input to some other gate). 
+    // However, we do need to add the fresh "gate variables" to an innermost existential block
+    //  - adding them to an outer block is not necessarily sound (TODO: why?)
+    int new_gate_var = c.maxVar();
+
+    std::map<Sylvan_Bdd, int> gatevars; //give every node in the BDD a unique variable name
+    vector<vector<int>> clauses;
+
+    std::set<Sylvan_Bdd> visited;
+    vector<Sylvan_Bdd> todo({bdd}); 
+    while (todo.size()!=0) {
+        Sylvan_Bdd b = todo.back(); todo.pop_back();
+        if (visited.count(b)==0){ // Node has not yet been visited
+            visited.insert(b);
+            if(gatevars.count(b)==0){
+                gatevars.insert({b,new_gate_var});
+                new_gate_var++;}
+            if(b==Sylvan_Bdd(false) || b== Sylvan_Bdd(true)) continue; //ignore leaves
+            
+            // b.root is a non-terminal node, i.e. represents some variable.
+            if(!b.lo().isConstant() || !b.hi().isConstant()){
+                // both children are non-terminals
+                if(gatevars.count(b.lo())==0){gatevars.insert({b.lo(),new_gate_var}); new_gate_var++; }
+                if(gatevars.count(b.hi())==0){gatevars.insert({b.hi(),new_gate_var}); new_gate_var++; }
+
+                // Node n, var x, children l and h
+                int n = gatevars.at(b);
+                int h = gatevars.at(b.hi());
+                int l = gatevars.at(b.lo());
+                int x = b.getRootVar();
+
+
+                clauses.push_back({-n,-x,h});
+                clauses.push_back({-n,x,l});
+                clauses.push_back({n,-x,-h});
+                clauses.push_back({n,x,-l});
+                clauses.push_back({n,-l,-h});
+            }
+            // TODO: cases where child is leaf
+        }
+    }
+
+    //TODO: output CNF as QDIMACS
 }
+
 
 Sylvan_Bdd Solver::unitpropagation(Sylvan_Bdd bdd) {
  
