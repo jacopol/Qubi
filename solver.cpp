@@ -280,6 +280,24 @@ int constValue(Sylvan_Bdd b){
     if(b==Sylvan_Bdd(true)) return 1;
     return -1;
 }
+std::map<int,int> varsInBdd(Sylvan_Bdd b){
+    std::map<int,int> varmap;
+    int newname = 1;
+
+    std::set<Sylvan_Bdd> visited;
+    vector<Sylvan_Bdd> todo({b}); 
+    while (todo.size()!=0) {
+        Sylvan_Bdd b = todo.back(); todo.pop_back();
+        if (visited.count(b)==0 && !b.isConstant()){ 
+            visited.insert(b);
+            todo.push_back(b.lo());
+            todo.push_back(b.hi());
+
+            if(varmap.count(b.getRootVar())==0) {varmap.insert({b.getRootVar(),newname++});} //be careful not to call newname++ more than once per varible.
+        }
+    }
+    return varmap;
+}
 
 void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
     // same idea as above in terms of building matrix first, prefix second. We do not need to reverse the list of clauses (unlike QCIR, we don't have gates, 
@@ -292,7 +310,10 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
     std::map<Sylvan_Bdd, int> gatevars; //give every node in the BDD a unique variable name
     vector<vector<int>> clauses;
 
-    std::set<int> vars_in_bdd; // Keep track of which input variables actually appear in BDD, likely fewer than in initial circuit
+    std::map<int,int> varmap = varsInBdd(bdd); // Keep track of which input variables actually appear in BDD, likely fewer than in initial circuit
+    int fresh_gate_var = varmap.size();
+    //TODO: rename variables in the set vars... maybe a map from int -> int?
+
     std::set<Sylvan_Bdd> visited;
     vector<Sylvan_Bdd> todo({bdd}); 
     while (todo.size()!=0) {
@@ -302,8 +323,7 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
             if(b==Sylvan_Bdd(false) || b== Sylvan_Bdd(true)) continue;
             // b.root is a non-terminal node, i.e. represents some variable.
             if(gatevars.count(b)==0) gatevars.insert({b,fresh_gate_var++});
-            vars_in_bdd.insert(b.getRootVar());
-            
+
             todo.push_back(b.lo());
             todo.push_back(b.hi());
 
@@ -315,7 +335,7 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
             int n = gatevars.at(b);
             int h = gatevars.at(b.hi());
             int l = gatevars.at(b.lo());
-            int x = b.getRootVar();
+            int x = varmap.at(b.getRootVar());
 
     
             //TODO: refactor and remove code duplication
