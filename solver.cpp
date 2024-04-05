@@ -292,19 +292,22 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
     std::map<Sylvan_Bdd, int> gatevars; //give every node in the BDD a unique variable name
     vector<vector<int>> clauses;
 
-    std::set<int> vars_in_bdd; // Keep track of which variables actually appear in BDD, likely fewer than in initial circuit
+    std::set<int> vars_in_bdd; // Keep track of which input variables actually appear in BDD, likely fewer than in initial circuit
     std::set<Sylvan_Bdd> visited;
     vector<Sylvan_Bdd> todo({bdd}); 
     while (todo.size()!=0) {
         Sylvan_Bdd b = todo.back(); todo.pop_back();
         if (visited.count(b)==0){ // Node has not yet been visited
             visited.insert(b);
-            if(b==Sylvan_Bdd(false) || b== Sylvan_Bdd(true)) continue; //ignore leaves
-            
+            if(b==Sylvan_Bdd(false) || b== Sylvan_Bdd(true)) continue;
+            // b.root is a non-terminal node, i.e. represents some variable.
             if(gatevars.count(b)==0) gatevars.insert({b,fresh_gate_var++});
             vars_in_bdd.insert(b.getRootVar());
+            
+            todo.push_back(b.lo());
+            todo.push_back(b.hi());
 
-            // b.root is a non-terminal node, i.e. represents some variable.
+            
             if(gatevars.count(b.lo())==0 && !b.lo().isConstant()) gatevars.insert({b.lo(),fresh_gate_var++});
             if(gatevars.count(b.hi())==0 && !b.hi().isConstant()) gatevars.insert({b.hi(),fresh_gate_var++});
 
