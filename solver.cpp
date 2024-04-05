@@ -274,52 +274,81 @@ void Solver::bdd2Qcir(std::ostream& s, Sylvan_Bdd bdd) const {
     // Idea: after computing matrix and building some set of found vars, loop over blocks in initial circuit and build prefix using these blocks,
     // but only including the variables found in the BFS.
 }
+// returns 1 if b==1, 0 if b==0, -1 otherwise.
+int constValue(Sylvan_Bdd b){
+    if(b==Sylvan_Bdd(false)) return 0;
+    if(b==Sylvan_Bdd(true)) return 1;
+    return -1;
+}
 
 void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
     // same idea as above in terms of building matrix first, prefix second. We do not need to reverse the list of clauses (unlike QCIR, we don't have gates, 
     // so we don't need to make sure that a gate is declared before it is used as input to some other gate). 
     // However, we do need to add the fresh "gate variables" to an innermost existential block
     //  - adding them to an outer block is not necessarily sound (TODO: why?)
-    int new_gate_var = c.maxVar();
+    int fresh_gate_var = c.maxVar();
+
 
     std::map<Sylvan_Bdd, int> gatevars; //give every node in the BDD a unique variable name
     vector<vector<int>> clauses;
 
+    std::set<int> vars_in_bdd; // Keep track of which variables actually appear in BDD, likely fewer than in initial circuit
     std::set<Sylvan_Bdd> visited;
     vector<Sylvan_Bdd> todo({bdd}); 
     while (todo.size()!=0) {
         Sylvan_Bdd b = todo.back(); todo.pop_back();
         if (visited.count(b)==0){ // Node has not yet been visited
             visited.insert(b);
-            if(gatevars.count(b)==0){
-                gatevars.insert({b,new_gate_var});
-                new_gate_var++;}
             if(b==Sylvan_Bdd(false) || b== Sylvan_Bdd(true)) continue; //ignore leaves
             
+            if(gatevars.count(b)==0) gatevars.insert({b,fresh_gate_var++});
+            vars_in_bdd.insert(b.getRootVar());
+
             // b.root is a non-terminal node, i.e. represents some variable.
-            if(!b.lo().isConstant() || !b.hi().isConstant()){
-                // both children are non-terminals
-                if(gatevars.count(b.lo())==0){gatevars.insert({b.lo(),new_gate_var}); new_gate_var++; }
-                if(gatevars.count(b.hi())==0){gatevars.insert({b.hi(),new_gate_var}); new_gate_var++; }
+            if(gatevars.count(b.lo())==0 && !b.lo().isConstant()) gatevars.insert({b.lo(),fresh_gate_var++});
+            if(gatevars.count(b.hi())==0 && !b.hi().isConstant()) gatevars.insert({b.hi(),fresh_gate_var++});
 
-                // Node n, var x, children l and h
-                int n = gatevars.at(b);
-                int h = gatevars.at(b.hi());
-                int l = gatevars.at(b.lo());
-                int x = b.getRootVar();
+            // Node n, var x, children l and h
+            int n = gatevars.at(b);
+            int h = gatevars.at(b.hi());
+            int l = gatevars.at(b.lo());
+            int x = b.getRootVar();
 
-
-                clauses.push_back({-n,-x,h});
+    
+            //TODO: refactor and remove code duplication
+            if(b.lo()==Sylvan_Bdd(true)){
+                clauses.push_back({n,x});
+            } else if (b.lo()==Sylvan_Bdd(false)){
+                clauses.push_back({-n,x});
+            } else {
                 clauses.push_back({-n,x,l});
-                clauses.push_back({n,-x,-h});
                 clauses.push_back({n,x,-l});
+            }
+
+            if(b.hi()==Sylvan_Bdd(true)){
+                clauses.push_back({n,-x});
+            } else if (b.hi()==Sylvan_Bdd(false)){
+                clauses.push_back({-n,-x});
+            } else {
+                clauses.push_back({-n,-x,h});
+                clauses.push_back({n,-x,-h});
+            }
+
+            if(b.lo()==Sylvan_Bdd(true) && !b.hi()==Sylvan_Bdd(false)) {
+                clauses.push_back({n,-h});
+            } else if (b.hi()==Sylvan_Bdd(true) && !b.lo()==Sylvan_Bdd(false)) { 
+                clauses.push_back({n,-l});
+            } else if (!b.hi().isConstant() && !b.lo().isConstant()) { 
                 clauses.push_back({n,-l,-h});
             }
-            // TODO: cases where child is leaf
+
+            // TODO perhaps I should generate the entire gate namespace in a loop before generating clauses?
         }
     }
 
     //TODO: output CNF as QDIMACS
+        // TODO: handle the fact that QDIMACS typically requires input variables to all be between 1 and vars.size().
+    // I.E. find some way to rename variables
 }
 
 
