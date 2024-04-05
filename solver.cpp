@@ -210,7 +210,7 @@ std::map<int, bool> Solver::detectUnitLits(Sylvan_Bdd bdd) {
         Sylvan_Bdd b = todo.back(); todo.pop_back();
         if (visited.count(b)==0){ // Node has not yet been visited
             visited.insert(b);
-            if(b==Sylvan_Bdd(false) || b== Sylvan_Bdd(true)) continue; //ignore leaves
+            if(b.isConstant()) continue; //ignore leaves
 
             todo.push_back(b.lo());
             todo.push_back(b.hi());
@@ -311,8 +311,7 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
     vector<vector<int>> clauses;
 
     std::map<int,int> varmap = varsInBdd(bdd); // Keep track of which input variables actually appear in BDD, likely fewer than in initial circuit
-    int fresh_gate_var = varmap.size();
-    //TODO: rename variables in the set vars... maybe a map from int -> int?
+    int fresh_gate_var = varmap.size()+1;
 
     std::set<Sylvan_Bdd> visited;
     vector<Sylvan_Bdd> todo({bdd}); 
@@ -320,7 +319,8 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
         Sylvan_Bdd b = todo.back(); todo.pop_back();
         if (visited.count(b)==0){ // Node has not yet been visited
             visited.insert(b);
-            if(b==Sylvan_Bdd(false) || b== Sylvan_Bdd(true)) continue;
+            if(b.isConstant()) continue;
+
             // b.root is a non-terminal node, i.e. represents some variable.
             if(gatevars.count(b)==0) gatevars.insert({b,fresh_gate_var++});
 
@@ -365,7 +365,6 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
                 clauses.push_back({n,-l,-h});
             }
 
-            // TODO perhaps I should generate the entire gate namespace in a loop before generating clauses?
         }
     }
 
