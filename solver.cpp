@@ -2,6 +2,7 @@
 // Aarhus University
 
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <algorithm>
 #include "solver.hpp"
@@ -16,7 +17,7 @@ Solver::Solver(const Circuit& circuit) : c(circuit), matrix(false) { }
 bool Solver::solve() {
     matrix2bdd();
     matrix = unitpropagation(matrix);
-    //bdd2CNF(cout, matrix); // <- for debugging
+    bdd2CNF(cout, matrix); // << print debugging, looks okay as of now
     prefix2bdd();
     return verdict();
 }
@@ -194,14 +195,6 @@ void Solver::pureLitElim(){
     }
 }
 
-bool bddAppearsInVector(Sylvan_Bdd bdd, vector<Sylvan_Bdd> v){
-    bool app = false;
-    for(int i = 0; i < v.size(); i++){
-        if(v[i]==bdd) app = true;
-    }
-    return app;
-}
-
 std::map<int, bool> Solver::detectUnitLits(Sylvan_Bdd bdd) {
 
     enum Unit {UnitTrue, UnitFalse, NotUnit};
@@ -211,7 +204,6 @@ std::map<int, bool> Solver::detectUnitLits(Sylvan_Bdd bdd) {
     // DFS search of the BDD starting from root
     // For every node, if lo(n) (or hi(n)) is BDD_FALSE, then the corresponding variable (or its negation) might be a unit literal
     // If all nodes corresponding to variable v have either lo(n) == FALSE (or hi(n)==FALSE), then v (or not(v)) is in fact a unit literal
-    int iterations = 0;
     std::set<Sylvan_Bdd> visited; // TODO: can we use a set for faster lookup?
     vector<Sylvan_Bdd> todo({bdd}); 
     while (todo.size()!=0) {
@@ -255,10 +247,8 @@ std::map<int, bool> Solver::detectUnitLits(Sylvan_Bdd bdd) {
                 isUnitMap.erase(b.getRootVar());
                 isUnitMap.insert({b.getRootVar(), NotUnit});
             }
-            iterations++;
         }
     }
-    cout << iterations << endl;
     // Return a map of variables to their unit values
     map<int, bool> unitLits;
     map<int, Unit>::iterator it;
@@ -285,17 +275,12 @@ void Solver::bdd2Qcir(std::ostream& s, Sylvan_Bdd bdd) const {
     // Idea: after computing matrix and building some set of found vars, loop over blocks in initial circuit and build prefix using these blocks,
     // but only including the variables found in the BFS.
 }
-// returns 1 if b==1, 0 if b==0, -1 otherwise.
-int constValue(Sylvan_Bdd b){
-    if(b==Sylvan_Bdd(false)) return 0;
-    if(b==Sylvan_Bdd(true)) return 1;
-    return -1;
-}
-std::map<int,int> varsInBdd(Sylvan_Bdd b){
-    std::map<int,int> varmap;
+
+map<int,int> varsInBdd(Sylvan_Bdd b){
+    map<int,int> varmap;
     int newname = 1;
 
-    std::set<Sylvan_Bdd> visited;
+    set<Sylvan_Bdd> visited;
     vector<Sylvan_Bdd> todo({b}); 
     while (todo.size()!=0) {
         Sylvan_Bdd b = todo.back(); todo.pop_back();
@@ -304,7 +289,7 @@ std::map<int,int> varsInBdd(Sylvan_Bdd b){
             todo.push_back(b.lo());
             todo.push_back(b.hi());
 
-            if(varmap.count(b.getRootVar())==0) {varmap.insert({b.getRootVar(),newname++});} //be careful not to call newname++ more than once per varible.
+            if(varmap.count(b.getRootVar())==0) varmap.insert({b.getRootVar(),newname++}); //be careful not to call newname++ more than once per varible.
         }
     }
     return varmap;
@@ -331,7 +316,6 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
     std::set<Sylvan_Bdd> visited;
     vector<Sylvan_Bdd> todo({bdd}); 
 
-    cout << "now for the mööse"<<endl;
     while (todo.size()!=0) {
         Sylvan_Bdd b = todo.back(); todo.pop_back();
         
@@ -343,15 +327,10 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
             todo.push_back(b.hi());
             // b.root is a non-terminal node, i.e. represents some variable.
             if(gatevars.count(b)==0) {gatevars.insert({b,fresh_gate_var}); fresh_gate_var++;}
-
-
-            
-
-            
             if(gatevars.count(b.lo())==0 && !b.lo().isConstant()) gatevars.insert({b.lo(),fresh_gate_var++});
             if(gatevars.count(b.hi())==0 && !b.hi().isConstant()) gatevars.insert({b.hi(),fresh_gate_var++});
+
             // Node n, var x, children l and h
-            cout<<"m¨oöse"<<endl;
             int n = gatevars.at(b);
             int l = b.lo().isConstant() ? 100 : gatevars.at(b.lo()); 
             int h = b.hi().isConstant() ? 200 : gatevars.at(b.hi()); 
@@ -389,16 +368,22 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
         }
     }
 
-    //TODO: remove leaf nodes from prefix
-
     s << "p cnf " << varmap.size() + gatevars.size() << " " << clauses.size() << endl; // QDIMACS needs specified the number of input variables and the number of clauses
 
     for(int i = 0; i < c.maxBlock(); i++){
+        
         Block b = c.getBlock(i);
+        bool empty = true;
+        for(int j = 0; j < b.variables.size(); j++){
+            if(varmap.count(b.variables[j])==1){           
+                empty = false;                               
+            }
+        }
+        if(empty) continue;
         string q = b.quantifier==Forall ? "a" : "e";
         s << q << " ";
         for(int j = 0; j < b.variables.size(); j++){
-            if(varmap.count(b.variables[j])==1){ // Only put variables in the prefix, which are present in the BDD
+            if(varmap.count(b.variables[j])==1){           // Only put variables in the prefix, which are present in the BDD
                 s << varmap.at(b.variables[j]) << " ";     // Use the new variable name
             }
         }
