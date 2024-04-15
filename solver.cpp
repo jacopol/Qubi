@@ -16,7 +16,7 @@ Solver::Solver(const Circuit& circuit) : c(circuit), matrix(false) { }
 bool Solver::solve() {
     matrix2bdd();
     matrix = unitpropagation(matrix);
-    bdd2CNF(cout, matrix);
+    //bdd2CNF(cout, matrix); // <- for debugging
     prefix2bdd();
     return verdict();
 }
@@ -216,7 +216,7 @@ std::map<int, bool> Solver::detectUnitLits(Sylvan_Bdd bdd) {
     vector<Sylvan_Bdd> todo({bdd}); 
     while (todo.size()!=0) {
         Sylvan_Bdd b = todo.back(); todo.pop_back();
-        if (!visited.count(b)==0){ // Node has not yet been visited
+        if (visited.count(b)==0){ // Node has not yet been visited
             visited.insert(b);
             //cout << "debug " << b.getRootVar()<< endl;
             if(b==Sylvan_Bdd(false) || b == Sylvan_Bdd(true)) continue; //ignore leaves
@@ -295,12 +295,12 @@ std::map<int,int> varsInBdd(Sylvan_Bdd b){
     std::map<int,int> varmap;
     int newname = 1;
 
-    std::vector<Sylvan_Bdd> visited;
+    std::set<Sylvan_Bdd> visited;
     vector<Sylvan_Bdd> todo({b}); 
     while (todo.size()!=0) {
         Sylvan_Bdd b = todo.back(); todo.pop_back();
-        if (!bddAppearsInVector(b,visited)){ 
-            visited.push_back(b);
+        if (visited.count(b)==0){ 
+            visited.insert(b);
             todo.push_back(b.lo());
             todo.push_back(b.hi());
 
@@ -318,19 +318,26 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
 
 
     std::map<Sylvan_Bdd, int> gatevars; //give every node in the BDD a unique variable name
+
+
+    // TODO: uaughrghghh?????
+
+
     vector<vector<int>> clauses;
 
     std::map<int,int> varmap = varsInBdd(bdd); // Keep track of which input variables actually appear in BDD, likely fewer than in initial circuit
     int fresh_gate_var = varmap.size()+1;
 
-    std::vector<Sylvan_Bdd> visited = {};
+    std::set<Sylvan_Bdd> visited;
     vector<Sylvan_Bdd> todo({bdd}); 
+
+    cout << "now for the mööse"<<endl;
     while (todo.size()!=0) {
         Sylvan_Bdd b = todo.back(); todo.pop_back();
-        if(b==Sylvan_Bdd(false) || b == Sylvan_Bdd(true)) {continue;}
         
-        if (!bddAppearsInVector(b,visited)){ // Node has not yet been visited
-            visited.push_back(b);
+        if (visited.count(b)== 0){ // Node has not yet been visited
+            visited.insert(b);
+            if(b==Sylvan_Bdd(false) || b == Sylvan_Bdd(true)) {continue;}
 
             todo.push_back(b.lo());
             todo.push_back(b.hi());
@@ -341,12 +348,13 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
             
 
             
-            if(gatevars.count(b.lo())==0) {gatevars.insert({b.lo(),fresh_gate_var}); if(!b.lo().isConstant()) fresh_gate_var++;}
-            if(gatevars.count(b.hi())==0) {gatevars.insert({b.hi(),fresh_gate_var}); if(!b.hi().isConstant()) fresh_gate_var++;}
+            if(gatevars.count(b.lo())==0 && !b.lo().isConstant()) gatevars.insert({b.lo(),fresh_gate_var++});
+            if(gatevars.count(b.hi())==0 && !b.hi().isConstant()) gatevars.insert({b.hi(),fresh_gate_var++});
             // Node n, var x, children l and h
+            cout<<"m¨oöse"<<endl;
             int n = gatevars.at(b);
-            int l = gatevars.at(b.lo()); 
-            int h = gatevars.at(b.hi());
+            int l = b.lo().isConstant() ? 100 : gatevars.at(b.lo()); 
+            int h = b.hi().isConstant() ? 200 : gatevars.at(b.hi()); 
             int x = varmap.at(b.getRootVar());
             
             

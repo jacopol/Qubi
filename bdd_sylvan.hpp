@@ -39,7 +39,7 @@ public:
 
     bool isConstant() const                         { return bdd.isConstant(); }
     bool operator==(const Sylvan_Bdd& other) const  { return bdd == other.bdd; }
-    bool operator< (const Sylvan_Bdd& other) const   { return bdd < other.bdd;  } //TODO: change this part!
+    bool operator< (const Sylvan_Bdd& other) const   { return bdd.GetBDD() < other.bdd.GetBDD();  } // sort by pointer value
     Sylvan_Bdd& operator+=(const Sylvan_Bdd& other) { bdd += other.bdd; peak(); return *this; }
     Sylvan_Bdd& operator*=(const Sylvan_Bdd& other) { bdd *= other.bdd; peak(); return *this; }
     Sylvan_Bdd  operator!() const                   { return Sylvan_Bdd(!bdd); }
