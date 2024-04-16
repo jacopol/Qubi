@@ -31,7 +31,7 @@ class Solver {
 
     public:
         Solver(const Circuit& circuit);
-        bool solve();
+        bool solve(string filename);
         Valuation example() const; // can only be called after solve()
 };
 

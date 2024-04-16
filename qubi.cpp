@@ -183,7 +183,7 @@ void report_result(const CircuitRW& qbf, bool verdict, const Valuation& valuatio
 
 TASK_2(bool, solve_task, CircuitRW*, qbf, Valuation*, valuation) {   
     Solver solver(*qbf);
-    bool verdict = solver.solve();
+    bool verdict = solver.solve(NAME.substr(0,NAME.find(".qcir")));
     if (EXAMPLE) *valuation = solver.example();
     return verdict;
 }

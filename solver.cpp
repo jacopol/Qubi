@@ -14,10 +14,13 @@ using std::endl;
 
 Solver::Solver(const Circuit& circuit) : c(circuit), matrix(false) { }
 
-bool Solver::solve() {
+bool Solver::solve(string filename) {
     matrix2bdd();
     matrix = unitpropagation(matrix);
-    bdd2CNF(cout, matrix); // << print debugging, looks okay as of now
+    std:: ofstream myfile;
+    myfile.open(filename + "_fromBDD.qdimacs");
+    bdd2CNF(myfile, matrix); // << print debugging, looks okay as of now
+    myfile.close();
     prefix2bdd();
     return verdict();
 }
@@ -410,7 +413,7 @@ Sylvan_Bdd Solver::unitpropagation(Sylvan_Bdd bdd) {
  
     map<int,bool> units = detectUnitLits(bdd);
     map<int, bool>::iterator it;
-    vector<Sylvan_Bdd> unitbdds; //TODO: restrict(matrix, (x\land y\land z)) or restrict(restrict(restrict(matrix,x),y),z)?
+    vector<Sylvan_Bdd> unitbdds; 
     for(it = units.begin(); it != units.end(); it++){
         unitbdds.push_back(it->second ? Sylvan_Bdd(it->first) : !Sylvan_Bdd(it->first));
         restricted_vars.push_back(it->second ? it->first : -(it->first)); LOG(1,"Detected unit var:" << it->first << endl);
@@ -442,6 +445,5 @@ void Solver::prefix2bdd() {
         LOG(2,endl);
 
 
-        //matrix = unitpropagation(matrix);
     }
 }
