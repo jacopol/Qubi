@@ -183,7 +183,7 @@ void report_result(const CircuitRW& qbf, bool verdict, const Valuation& valuatio
 
 TASK_2(bool, solve_task, CircuitRW*, qbf, Valuation*, valuation) {   
     Solver solver(*qbf);
-    bool verdict = solver.solve(NAME.substr(0,NAME.find(".qcir")));
+    bool verdict = solver.solve(NAME.substr(0,NAME.find(".qcir"))); // The solver has access to the filename and can thus e.g. write QDIMACS files with similar names
     if (EXAMPLE) *valuation = solver.example();
     return verdict;
 }

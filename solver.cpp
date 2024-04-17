@@ -12,15 +12,15 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
+string file;
+
 Solver::Solver(const Circuit& circuit) : c(circuit), matrix(false) { }
 
 bool Solver::solve(string filename) {
+    file = filename;
     matrix2bdd();
     matrix = unitpropagation(matrix);
-    std:: ofstream myfile;
-    myfile.open(filename + "_fromBDD.qdimacs");
-    bdd2CNF(myfile, matrix); // << print debugging, looks okay as of now
-    myfile.close();
+
     prefix2bdd();
     return verdict();
 }
@@ -207,7 +207,7 @@ std::map<int, bool> Solver::detectUnitLits(Sylvan_Bdd bdd) {
     // DFS search of the BDD starting from root
     // For every node, if lo(n) (or hi(n)) is BDD_FALSE, then the corresponding variable (or its negation) might be a unit literal
     // If all nodes corresponding to variable v have either lo(n) == FALSE (or hi(n)==FALSE), then v (or not(v)) is in fact a unit literal
-    std::set<Sylvan_Bdd> visited; // TODO: can we use a set for faster lookup?
+    std::set<Sylvan_Bdd> visited; 
     vector<Sylvan_Bdd> todo({bdd}); 
     while (todo.size()!=0) {
         Sylvan_Bdd b = todo.back(); todo.pop_back();
@@ -292,7 +292,7 @@ map<int,int> varsInBdd(Sylvan_Bdd b){
             todo.push_back(b.lo());
             todo.push_back(b.hi());
 
-            if(varmap.count(b.getRootVar())==0) varmap.insert({b.getRootVar(),newname++}); //be careful not to call newname++ more than once per varible.
+            if(varmap.count(b.getRootVar())==0) varmap.insert({b.getRootVar(),newname++}); 
         }
     }
     return varmap;
@@ -305,13 +305,8 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
     //  - adding them to an outer block is not necessarily sound (TODO: why?)
 
 
-    std::map<Sylvan_Bdd, int> gatevars; //give every node in the BDD a unique variable name
-
-
-    // TODO: uaughrghghh?????
-
-
-    vector<vector<int>> clauses;
+    std::map<Sylvan_Bdd, int> gatevars; // give every node in the BDD a unique variable name
+    vector<vector<int>> clauses;        // Clauses are vectors of literals, the ORs are implicit
 
     std::map<int,int> varmap = varsInBdd(bdd); // Keep track of which input variables actually appear in BDD, likely fewer than in initial circuit
     int fresh_gate_var = varmap.size()+1;
@@ -392,6 +387,7 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
         }
         s << 0 << endl;
     }
+    // Put Tseitin variables in the inner-most (existential) block:
     s << "e ";
     for(int i = varmap.size()+1; i < varmap.size() + gatevars.size() +1; i++){
         s << i << " ";
@@ -444,6 +440,11 @@ void Solver::prefix2bdd() {
         if (STATISTICS) { LOG(2," (" << matrix.NodeCount() << " nodes)"); }
         LOG(2,endl);
 
-
+        if(i==c.maxBlock()-5) {
+            std:: ofstream myfile;
+            myfile.open(file + "_inPrefix.qdimacs");
+            bdd2CNF(myfile, matrix); // << print debugging, looks okay as of now
+            myfile.close();
+        }
     }
 }
