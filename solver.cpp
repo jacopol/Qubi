@@ -433,18 +433,17 @@ void Solver::prefix2bdd() {
         }
         Block b = c.getBlock(i);
         LOG(2,"- block " << i+1 << " (" << b.size() << "x " << Qtext[b.quantifier] << "): ");
-        if (b.quantifier == Forall)
+        if (b.quantifier == Forall){
             matrix = matrix.UnivAbstract(b.variables);
+            std:: ofstream myfile;
+            myfile.open(file + "_inPrefix" + std::to_string(i)  +".qdimacs");
+            bdd2CNF(myfile, matrix); // << print debugging, looks okay as of now
+            myfile.close();
+        }
         else
             matrix = matrix.ExistAbstract(b.variables);
         if (STATISTICS) { LOG(2," (" << matrix.NodeCount() << " nodes)"); }
         LOG(2,endl);
 
-        if(i==c.maxBlock()-5) {
-            std:: ofstream myfile;
-            myfile.open(file + "_inPrefix.qdimacs");
-            bdd2CNF(myfile, matrix); // << print debugging, looks okay as of now
-            myfile.close();
-        }
     }
 }
