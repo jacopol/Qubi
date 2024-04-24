@@ -289,26 +289,35 @@ Sylvan_Bdd Solver::unitpropagation(Sylvan_Bdd bdd) {
 }
 
 vector<Sylvan_Bdd> Solver::unitprop_general(vector<Sylvan_Bdd> bdds){
+    set<Sylvan_Bdd> unitbdds;
+
+    vector<int> localrestvars;
+
     for(int i = 0; i < bdds.size(); i++){
         Sylvan_Bdd bdd = bdds[i];
         map<int,bool> units = detectUnitLits(bdd);
         map<int, bool>::iterator it;
-        vector<Sylvan_Bdd> unitbdds; 
         for(it = units.begin(); it != units.end(); it++){
             Sylvan_Bdd u = it->second ? Sylvan_Bdd(it->first) : !(Sylvan_Bdd(it->first));
-            if(bdd.restrict(!u)==Sylvan_Bdd(false)){
-                // u is a generalized unit literal
-                LOG(1,"Detected unit var:" << it->first << " at iteration " << i << " with value " << it->second << endl);
-                unitbdds.push_back(u);
-                restricted_vars.push_back(it->second ? it->first : -(it->first)); 
-            }
 
+            //TODO: is it safe when using indifferent unit literals in general? Probably not, but I need to study this further
+            // Idea: my intuition is, that it is safe to pick an indifferent unit literal l,
+            // as long as not(l) isn't an indifferent unit literal in one of the other bdds.
 
+            // u is a generalized unit literal
+            unitbdds.insert(u);
+            restricted_vars.push_back(it->second ? it->first : -(it->first)); // <- TODO: change this part
+            LOG(1,"Maybe unit var? " << it->first << " value: " << it->second << endl);
         }
-        for(int j = 0; j < unitbdds.size(); j++){
+    }
+    set<Sylvan_Bdd>::iterator it;
+    for(it = unitbdds.begin(); it != unitbdds.end(); it++){
+        Sylvan_Bdd u = *it;
+        if(unitbdds.count(!u)==0){ // None of the BDDs require u to be false
             for(int k = 0; k < bdds.size(); k++){
-                bdds[k] = bdds[k].restrict(unitbdds[j]);
+                bdds[k] = bdds[k].restrict(u);
             }
+            LOG(1,"Detected unit var:" << u.getRootVar() << endl);
         }
     }
     return bdds;
