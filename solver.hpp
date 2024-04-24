@@ -23,6 +23,7 @@ class Solver {
 
         std::map<int, bool> detectUnitLits(Sylvan_Bdd bdd);
         Sylvan_Bdd unitpropagation(Sylvan_Bdd bdd); // compute generalized unit clauses and restrict bdd
+        vector<Sylvan_Bdd> unitprop_general(vector<Sylvan_Bdd>);
         vector<int> polarity(); // polarity of variables, 1 (or 0) indicates positively (or negatively) pure literals,
                                 // -2 indicates unitialized, -1 indicates non-pure literal
         void pureLitElim();

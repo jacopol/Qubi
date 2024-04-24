@@ -129,6 +129,14 @@ void Solver::matrix2bdd() {
             if (garbage.size()>0) LOG(3,"]");
         }
 
+        // TODO: generalize, double check that an indifferent unit lit. is a gen. unit lit.
+        // TODO: restrict the gen. unit lit. in the other bdds.
+        //Reichl synthesis specifically
+        if(i==c.getOutput() && g.output == And){
+            args = unitprop_general(args);
+        }
+
+
         Sylvan_Bdd bdd(false);
         if (g.output == And)
             bdd = Sylvan_Bdd::bigAnd(args);
@@ -263,6 +271,51 @@ std::map<int, bool> Solver::detectUnitLits(Sylvan_Bdd bdd) {
     }
     return unitLits;
 }
+
+
+Sylvan_Bdd Solver::unitpropagation(Sylvan_Bdd bdd) {
+ 
+    map<int,bool> units = detectUnitLits(bdd);
+    map<int, bool>::iterator it;
+    vector<Sylvan_Bdd> unitbdds; 
+    for(it = units.begin(); it != units.end(); it++){
+        unitbdds.push_back(it->second ? Sylvan_Bdd(it->first) : !Sylvan_Bdd(it->first));
+        restricted_vars.push_back(it->second ? it->first : -(it->first)); LOG(1,"Detected unit var:" << it->first << endl);
+    }
+    for(int i = 0; i < unitbdds.size(); i++){
+        bdd = bdd.restrict(unitbdds[i]); 
+    }
+    return bdd;
+}
+
+vector<Sylvan_Bdd> Solver::unitprop_general(vector<Sylvan_Bdd> bdds){
+    for(int i = 0; i < bdds.size(); i++){
+        Sylvan_Bdd bdd = bdds[i];
+        map<int,bool> units = detectUnitLits(bdd);
+        map<int, bool>::iterator it;
+        vector<Sylvan_Bdd> unitbdds; 
+        for(it = units.begin(); it != units.end(); it++){
+            Sylvan_Bdd u = it->second ? Sylvan_Bdd(it->first) : !(Sylvan_Bdd(it->first));
+            if(bdd.restrict(!u)==Sylvan_Bdd(false)){
+                // u is a generalized unit literal
+                LOG(1,"Detected unit var:" << it->first << " at iteration " << i << " with value " << it->second << endl);
+                unitbdds.push_back(u);
+                restricted_vars.push_back(it->second ? it->first : -(it->first)); 
+            }
+
+
+        }
+        for(int j = 0; j < unitbdds.size(); j++){
+            for(int k = 0; k < bdds.size(); k++){
+                bdds[k] = bdds[k].restrict(unitbdds[j]);
+            }
+        }
+    }
+    return bdds;
+}
+
+
+
 
 void Solver::bdd2Qcir(std::ostream& s, Sylvan_Bdd bdd) const {
     s << "#QCIR-G14" << endl;
@@ -405,24 +458,6 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
 }
 
 
-Sylvan_Bdd Solver::unitpropagation(Sylvan_Bdd bdd) {
- 
-    map<int,bool> units = detectUnitLits(bdd);
-    map<int, bool>::iterator it;
-    vector<Sylvan_Bdd> unitbdds; 
-    for(it = units.begin(); it != units.end(); it++){
-        unitbdds.push_back(it->second ? Sylvan_Bdd(it->first) : !Sylvan_Bdd(it->first));
-        restricted_vars.push_back(it->second ? it->first : -(it->first)); LOG(1,"Detected unit var:" << it->first << endl);
-    }
-    for(int i = 0; i < unitbdds.size(); i++){
-        bdd = bdd.restrict(unitbdds[i]); 
-    }
-    return bdd;
-}
-
-
-
-
 void Solver::prefix2bdd() {
     LOG(1,"Quantifying Prefix" << endl);
     // Quantify blocks from last to second, unless fully resolved
@@ -434,11 +469,14 @@ void Solver::prefix2bdd() {
         Block b = c.getBlock(i);
         LOG(2,"- block " << i+1 << " (" << b.size() << "x " << Qtext[b.quantifier] << "): ");
         if (b.quantifier == Forall){
-            matrix = matrix.UnivAbstract(b.variables);
-            std:: ofstream myfile;
+            /*std:: ofstream myfile;
             myfile.open(file + "_inPrefix" + std::to_string(i)  +".qdimacs");
             bdd2CNF(myfile, matrix); // << print debugging, looks okay as of now
-            myfile.close();
+            myfile.close(); */
+
+
+
+            matrix = matrix.UnivAbstract(b.variables);
         }
         else
             matrix = matrix.ExistAbstract(b.variables);
