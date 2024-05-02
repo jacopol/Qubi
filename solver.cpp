@@ -19,7 +19,11 @@ Solver::Solver(const Circuit& circuit) : c(circuit), matrix(false) { }
 bool Solver::solve(string filename) {
     file = filename;
     matrix2bdd();
-    //matrix = unitpropagation(matrix);
+    matrix = unitpropagation(matrix);
+    std:: ofstream myfile;
+    myfile.open(file + "_fromBDD.qdimacs");
+    bdd2CNF(myfile, matrix); // << print debugging, looks okay as of now
+    myfile.close();
 
     prefix2bdd();
     return verdict();
@@ -352,24 +356,6 @@ map<int,int> varsInBdd(Sylvan_Bdd bdd){
     return varmap;
 }
 
-map<Sylvan_Bdd,int> gatesinBDD(Sylvan_Bdd bdd, int init){
-    map<Sylvan_Bdd,int> bddmap;
-    int newname = init;
-
-    set<Sylvan_Bdd> visited;
-    vector<Sylvan_Bdd> todo({bdd}); 
-    while (todo.size()!=0) {
-        Sylvan_Bdd b = todo.back(); todo.pop_back();
-        if (visited.count(b)==0){ 
-            visited.insert(b);
-            todo.push_back(b.lo());
-            todo.push_back(b.hi());
-
-            if(bddmap.count(b.getRootVar())==0) bddmap.insert({b,newname++}); 
-        }
-    }
-    return bddmap;
-}
 
 void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
     // same idea as above in terms of building matrix first, prefix second. We do not need to reverse the list of clauses (unlike QCIR, we don't have gates, 
@@ -382,7 +368,8 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
     vector<vector<int>> clauses;        // Clauses are vectors of literals, the ORs are implicit
 
     std::map<int,int> varmap = varsInBdd(bdd); // Keep track of which input variables actually appear in BDD, likely fewer than in initial circuit
-    std::map<Sylvan_Bdd, int> gatevars=gatesinBDD(bdd,varmap.size()+1);
+    std::map<Sylvan_Bdd, int> gatevars;
+    int fresh_gate_var = varmap.size()+1;
 
     std::set<Sylvan_Bdd> visited;
     vector<Sylvan_Bdd> todo({bdd}); 
@@ -392,41 +379,56 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
         
         if (visited.count(b)== 0){ // Node has not yet been visited
             visited.insert(b);
-            if(b==Sylvan_Bdd(false) || b == Sylvan_Bdd(true)) {continue;}
+            if(b.isConstant()) {continue;}
 
             todo.push_back(b.lo());
             todo.push_back(b.hi());
             // b.root is a non-terminal node, i.e. represents some variable.
+
+            if(gatevars.count(b)==0) {gatevars.insert({b,fresh_gate_var}); fresh_gate_var++;}
+            if(gatevars.count(b.lo())==0 && !b.lo().isConstant()) gatevars.insert({b.lo(),fresh_gate_var++});
+            if(gatevars.count(b.hi())==0 && !b.hi().isConstant()) gatevars.insert({b.hi(),fresh_gate_var++});
             
 
             // Node n, var x, children l and h
             int n = gatevars.at(b);
-            int l = gatevars.at(b.lo()); 
-            int h = gatevars.at(b.hi()); 
+
+            int l = b.lo().isConstant() ? 100 : gatevars.at(b.lo()); 
+
+            int h = b.hi().isConstant() ? 200 : gatevars.at(b.hi()); 
+
             int x = varmap.at(b.getRootVar());
             
-            
+
     
             //TODO: refactor and remove code duplication
-            if (b.lo()==Sylvan_Bdd(false)){
+            if(b.lo()==Sylvan_Bdd(true)){
+                clauses.push_back({n,x});
+            } else if (b.lo()==Sylvan_Bdd(false)){
                 clauses.push_back({-n,x});
             } else {
                 clauses.push_back({-n,x,l});
                 clauses.push_back({n,x,-l});
             }
-            if (b.hi()==Sylvan_Bdd(false)){
+            if(b.hi()==Sylvan_Bdd(true)){
+                clauses.push_back({n,-x});
+            } else if (b.hi()==Sylvan_Bdd(false)){
                 clauses.push_back({-n,-x});
             } else {
                 clauses.push_back({-n,-x,h});
                 clauses.push_back({n,-x,-h});
             }
-            clauses.push_back({n,-l,-h});
-
-
+            if(b.lo()==Sylvan_Bdd(true) && !b.hi()==Sylvan_Bdd(false)) {
+                clauses.push_back({n,-h});
+            } else if (b.hi()==Sylvan_Bdd(true) && !b.lo()==Sylvan_Bdd(false)) { 
+                clauses.push_back({n,-l});
+            } else if (!b.hi().isConstant() && !b.lo().isConstant()) { 
+                clauses.push_back({n,-l,-h});
+            }
         }
     }
-    clauses.push_back({gatevars.at(Sylvan_Bdd(true))});
-    clauses.push_back({-gatevars.at(Sylvan_Bdd(false))});
+    if(!bdd.isConstant()) clauses.push_back({gatevars.at(bdd)}); // Similar to Tseitin transformation, we need the root node to always be visited one way or another
+
 
     s << "p cnf " << varmap.size() + gatevars.size() << " " << clauses.size() << endl; // QDIMACS needs specified the number of input variables and the number of clauses
 
