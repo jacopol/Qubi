@@ -420,14 +420,13 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
                 clauses.push_back({-n,-x,h});
                 clauses.push_back({n,-x,-h});
             }
-
-                clauses.push_back({n,-l,-h});
+            clauses.push_back({n,-l,-h});
 
 
         }
     }
     clauses.push_back({gatevars.at(Sylvan_Bdd(true))});
-    clauses.push_back({-gatevars.at(Sylvan_Bdd(false))});
+    clauses.push_back({});
 
     s << "p cnf " << varmap.size() + gatevars.size() << " " << clauses.size() << endl; // QDIMACS needs specified the number of input variables and the number of clauses
 
