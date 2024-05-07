@@ -5,6 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <algorithm>
+#include <deque>
 #include "solver.hpp"
 #include "settings.hpp"
 
@@ -21,8 +22,8 @@ bool Solver::solve(string filename) {
     matrix2bdd();
     matrix = unitpropagation(matrix);
     std:: ofstream myfile;
-    myfile.open(file + "_fromBDD.qdimacs");
-    bdd2CNF(myfile, matrix); // << print debugging, looks okay as of now
+    myfile.open(file + "_fromBDD.qcir");
+    bdd2Qcir(myfile, matrix); // << print debugging, looks okay as of now
     myfile.close();
 
     prefix2bdd();
@@ -320,23 +321,6 @@ vector<Sylvan_Bdd> Solver::unitprop_general(vector<Sylvan_Bdd> bdds){
 }
 
 
-
-
-void Solver::bdd2Qcir(std::ostream& s, Sylvan_Bdd bdd) const {
-    s << "#QCIR-G14" << endl;
-    std::set<Sylvan_Bdd> visited;
-    vector<Sylvan_Bdd> todo({bdd}); 
-    //BFS, then output result in reverse order
-    //TODO
-
-    // To compute prefix, make sure to only include those variables, that are in the BDD (could be a smaller set than the ones in the initial circuit)
-    // This can e.g. be done by keeping track of all visited variables in the BFS, thus only adding variables found in the BFS to the prefix
-    // Using the quantAt-function on the original Circuit object, we can easily look up the quantification of a specific variable.
-
-    // Idea: after computing matrix and building some set of found vars, loop over blocks in initial circuit and build prefix using these blocks,
-    // but only including the variables found in the BFS.
-}
-
 map<int,int> varsInBdd(Sylvan_Bdd bdd){
     map<int,int> varmap;
     int newname = 1;
@@ -354,6 +338,74 @@ map<int,int> varsInBdd(Sylvan_Bdd bdd){
         }
     }
     return varmap;
+}
+
+
+
+void Solver::bdd2Qcir(std::ostream& s, Sylvan_Bdd bdd) const {
+    vector<string> gates;
+    map<int,int> varmap = varsInBdd(bdd);
+    std::map<Sylvan_Bdd, int> gatevars;
+    int fresh_gate_var = varmap.size()+1;
+
+    // BFS, gate variables must be declared in the file before used as input to other gates.
+    std::set<Sylvan_Bdd> visited;
+    std::deque<Sylvan_Bdd> todo({bdd}); 
+    while (todo.size()!=0) {
+        Sylvan_Bdd b = todo.front(); todo.pop_front();
+        
+        if (visited.count(b)== 0){ // Node has not yet been visited
+            visited.insert(b);
+            if(b.isConstant()) {continue;}
+
+            todo.push_back(b.lo());
+            todo.push_back(b.hi());
+
+            if(gatevars.count(b)==0) {gatevars.insert({b,fresh_gate_var}); fresh_gate_var++;}
+            if(gatevars.count(b.lo())==0) gatevars.insert({b.lo(),fresh_gate_var++});
+            if(gatevars.count(b.hi())==0) gatevars.insert({b.hi(),fresh_gate_var++});
+
+            string n = std::to_string(gatevars.at(b));
+            string l = std::to_string(gatevars.at(b.lo())); 
+            string h = std::to_string(gatevars.at(b.hi())); 
+            string x = std::to_string(varmap.at(b.getRootVar()));
+
+            gates.push_back(n+" = ite(" + x+ ", " + h + ", " + l+")");
+        }
+    }
+    gates.push_back(std::to_string(gatevars.at(Sylvan_Bdd(false))) + " = or()"); // Encode 0-leaf as false
+    gates.push_back(std::to_string(gatevars.at(Sylvan_Bdd(true))) + " = and()"); // Encode 1-leaf as true
+
+    // Print prefix
+
+    s << "#QCIR-G14" << endl;
+
+    for(int i = 0; i < c.maxBlock(); i++){
+        Block b = c.getBlock(i);
+        bool empty = true;
+        for(int j = 0; j < b.variables.size(); j++){
+            if(varmap.count(b.variables[j])==1){           
+                empty = false;                               
+            }
+        }
+        if(empty) continue;
+        string q = b.quantifier==Forall ? "forall" : "exists";
+        s << q << "(";
+        bool first = true;
+        for(int j = 0; j < b.variables.size(); j++){
+            if(varmap.count(b.variables[j])==1){
+                if(!first) s << ", ";           // Only put variables in the prefix, which are present in the BDD
+                s << varmap.at(b.variables[j]);     // Use the new variable name
+                first = false;
+            }
+        }
+        s << ")" << endl;
+    }
+    s << "output(" << gatevars.at(bdd) << ")"<< endl; // set root node as output gate.
+
+    for(int i = gates.size()-1; i >= 0; i--){
+        s << gates[i] << endl;
+    }
 }
 
 
@@ -480,11 +532,11 @@ void Solver::prefix2bdd() {
         Block b = c.getBlock(i);
         LOG(2,"- block " << i+1 << " (" << b.size() << "x " << Qtext[b.quantifier] << "): ");
         if (b.quantifier == Forall){
-            std:: ofstream myfile;
+            /*std:: ofstream myfile;
             myfile.open(file + "_inPrefix" + std::to_string(i)  +".qdimacs");
             bdd2CNF(myfile, matrix); // << print debugging, looks okay as of now
             myfile.close();
-
+*/
 
 
             matrix = matrix.UnivAbstract(b.variables);
