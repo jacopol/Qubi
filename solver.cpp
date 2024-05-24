@@ -285,6 +285,9 @@ Sylvan_Bdd Solver::unitpropagation(Sylvan_Bdd bdd) {
     vector<Sylvan_Bdd> unitbdds; 
     for(it = units.begin(); it != units.end(); it++){
         unitbdds.push_back(it->second ? Sylvan_Bdd(it->first) : !Sylvan_Bdd(it->first));
+        if(bdd.restrict(!unitbdds.back())==Sylvan_Bdd(false)){ // u is a generalized unit clause
+                LOG(1, "Generalized unit clause:" << it->first << endl);
+            }
         restricted_vars.push_back(it->second ? it->first : -(it->first)); LOG(1,"Detected unit var:" << it->first << endl);
     }
     for(int i = 0; i < unitbdds.size(); i++){
@@ -414,9 +417,9 @@ void Solver::bdd2Qcir(std::ostream& s, Sylvan_Bdd bdd) const {
             s << ")" << endl;
         }
         else if(gateisconstant == 0){
-            s << i << " = or()" << endl;
+            s << i << " = or()" << endl; // "or()" is the easiest way to encode a constant "false" in QCIR
         } else if(gateisconstant == 1){
-            s << i << " = and()" << endl;
+            s << i << " = and()" << endl; // "and()" is the easiest way to encode constant "true"
         }
     }
 }
@@ -425,11 +428,6 @@ void Solver::bdd2Qcir(std::ostream& s, Sylvan_Bdd bdd) const {
 
 
 void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
-    // same idea as above in terms of building matrix first, prefix second. We do not need to reverse the list of clauses (unlike QCIR, we don't have gates, 
-    // so we don't need to make sure that a gate is declared before it is used as input to some other gate). 
-    // However, we do need to add the fresh "gate variables" to an innermost existential block
-    //  - adding them to an outer block is not necessarily sound (TODO: why?)
-
 
 // give every node in the BDD a unique variable name
     vector<vector<int>> clauses;        // Clauses are vectors of literals, the ORs are implicit
