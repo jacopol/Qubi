@@ -345,36 +345,6 @@ map<int,int> varsInBdd(Sylvan_Bdd bdd){
 void Solver::bdd2Qcir(std::ostream& s, Sylvan_Bdd bdd) const {
     vector<string> gates;
     map<int,int> varmap = varsInBdd(bdd);
-  
-/*
-    // BFS, gate variables must be declared in the file before used as input to other gates.
-    std::set<Sylvan_Bdd> visited;
-    std::deque<Sylvan_Bdd> todo({bdd}); 
-    while (todo.size()!=0) {
-        Sylvan_Bdd b = todo.front(); todo.pop_front();
-        
-        if (visited.count(b)== 0){ // Node has not yet been visited
-            visited.insert(b);
-            if(b.isConstant()) {continue;}
-
-            todo.push_back(b.lo());
-            todo.push_back(b.hi());
-
-            if(gatevars.count(b)==0) {gatevars.insert({b,fresh_gate_var}); fresh_gate_var++;}
-            if(gatevars.count(b.lo())==0) gatevars.insert({b.lo(),fresh_gate_var++});
-            if(gatevars.count(b.hi())==0) gatevars.insert({b.hi(),fresh_gate_var++});
-
-            string n = std::to_string(gatevars.at(b));
-            string l = std::to_string(gatevars.at(b.lo())); 
-            string h = std::to_string(gatevars.at(b.hi())); 
-            string x = std::to_string(varmap.at(b.getRootVar()));
-
-            gates.push_back(n+" = ite(" + x+ ", " + h + ", " + l+")");
-        }
-    }
-    gates.push_back(std::to_string(gatevars.at(Sylvan_Bdd(false))) + " = or()"); // Encode 0-leaf as false
-    gates.push_back(std::to_string(gatevars.at(Sylvan_Bdd(true))) + " = and()"); // Encode 1-leaf as true
-*/
     // Print prefix
 
     s << "#QCIR-G14" << endl;
@@ -401,6 +371,8 @@ void Solver::bdd2Qcir(std::ostream& s, Sylvan_Bdd bdd) const {
         s << ")" << endl;
     }
     s << "output(" << c.getOutput() << ")" << endl; // set root node as output gate.
+
+    // Iterate over every gate in the circuit, for simplicity we add every gate to the output file including gates that aren't used
 
     for(int i = c.maxVar(); i <= abs(c.getOutput()); i++){
         Gate g = c.getGate(i);
