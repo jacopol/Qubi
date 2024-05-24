@@ -345,9 +345,8 @@ map<int,int> varsInBdd(Sylvan_Bdd bdd){
 void Solver::bdd2Qcir(std::ostream& s, Sylvan_Bdd bdd) const {
     vector<string> gates;
     map<int,int> varmap = varsInBdd(bdd);
-    std::map<Sylvan_Bdd, int> gatevars;
-    int fresh_gate_var = varmap.size()+1;
-
+  
+/*
     // BFS, gate variables must be declared in the file before used as input to other gates.
     std::set<Sylvan_Bdd> visited;
     std::deque<Sylvan_Bdd> todo({bdd}); 
@@ -375,7 +374,7 @@ void Solver::bdd2Qcir(std::ostream& s, Sylvan_Bdd bdd) const {
     }
     gates.push_back(std::to_string(gatevars.at(Sylvan_Bdd(false))) + " = or()"); // Encode 0-leaf as false
     gates.push_back(std::to_string(gatevars.at(Sylvan_Bdd(true))) + " = and()"); // Encode 1-leaf as true
-
+*/
     // Print prefix
 
     s << "#QCIR-G14" << endl;
@@ -387,7 +386,7 @@ void Solver::bdd2Qcir(std::ostream& s, Sylvan_Bdd bdd) const {
             if(varmap.count(b.variables[j])==1){           
                 empty = false;                               
             }
-        }
+        }    
         if(empty) continue;
         string q = b.quantifier==Forall ? "forall" : "exists";
         s << q << "(";
@@ -401,12 +400,56 @@ void Solver::bdd2Qcir(std::ostream& s, Sylvan_Bdd bdd) const {
         }
         s << ")" << endl;
     }
-    s << "output(" << gatevars.at(bdd) << ")"<< endl; // set root node as output gate.
+    s << "output(" << c.getOutput() << ")" << endl; // set root node as output gate.
 
-    for(int i = gates.size()-1; i >= 0; i--){
-        s << gates[i] << endl;
+    for(int i = c.maxVar(); i <= abs(c.getOutput()); i++){
+        Gate g = c.getGate(i);
+        int gateisconstant = -1; // -1 indicates no, 0 indicates false (i.e. or()) and 1 indicates true (i.e. and())
+        vector<int> args;
+        for (int arg: g.inputs) {
+            
+            if(abs(arg) >= c.maxVar()){
+                args.push_back(arg);
+            } else if(varmap.count(abs(arg))==1 ){ // Include any non-trivial literals as well as any gates as input
+                int argument = arg >= 0 ? varmap.at(abs(arg)) : -varmap.at(abs(arg));
+
+                args.push_back(argument); // TODO: use new name instead
+            } else{                                                    // The input variable does not appear in the BDD
+                for(int j=0; j<restricted_vars.size(); j++){
+                    if(abs(arg)==abs(restricted_vars[j])){
+                        bool polarity = restricted_vars[j] >= 0;
+                        bool arg_is_true = (arg >= 0) == polarity;     // does the input to the gate have the same sign, as what we assigned the variable?
+                                                                        // I.e. if the input is -2, does -2 also appear in restricted_vars? Or is it 2?
+                        if(g.output == And && !arg_is_true) gateisconstant = 0;
+                        if(g.output == Or && arg_is_true) gateisconstant = 1;
+
+
+                    }
+                // There is no reason for an else-branch... if 'arg' is not any of the variables detected in unit propagation, 
+                // then its truth value is completely irrelevant -- 'arg' does not appear in the matrix-BDD at all.
+                // Thus there is no reason to add it to the list of arguments.
+                }
+            }
+        }
+        if(gateisconstant == -1){
+            s << i << " = " << Ctext[g.output] << "(";
+            bool first = true;
+            for(int j = 0; j < args.size(); j++){
+                if(!first) s << ", ";
+                s << args[j];
+                first = false;
+            }
+            s << ")" << endl;
+        }
+        else if(gateisconstant == 0){
+            s << i << " = or()" << endl;
+        } else if(gateisconstant == 1){
+            s << i << " = and()" << endl;
+        }
     }
 }
+
+
 
 
 void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
