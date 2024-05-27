@@ -30,9 +30,10 @@ class Solver {
         void bdd2Qcir(std::ostream&, Sylvan_Bdd) const;
         void bdd2CNF(std::ostream&, Sylvan_Bdd) const;
 
+        void write_output(string filename, bool cir, bool cnf) const;
     public:
         Solver(const Circuit& circuit);
-        bool solve(string filename, int prop);
+        bool solve(string filename, int prop, bool to_circuit, bool to_cnf);
         Valuation example() const; // can only be called after solve()
 };
 

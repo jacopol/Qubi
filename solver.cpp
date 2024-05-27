@@ -17,17 +17,32 @@ string file;
 
 Solver::Solver(const Circuit& circuit) : c(circuit), matrix(false) { }
 
-bool Solver::solve(string filename, int prop) {
+bool Solver::solve(string filename, int prop, bool to_circuit, bool to_cnf) {
     file = filename;
     matrix2bdd();
     if(prop) matrix = unitpropagation(matrix);
-    std:: ofstream myfile;
-    myfile.open(file + "_fromBDD.qcir");
-    bdd2Qcir(myfile, matrix); 
-    myfile.close();
+    write_output(filename, to_circuit, to_cnf);
+    
 
     prefix2bdd();
     return verdict();
+}
+
+void Solver::write_output(string filename, bool cir, bool cnf) const {
+    if(cnf){
+        LOG(2, "Writing QDIMACS file in " << file << ".qdimacs" << endl);
+        std:: ofstream myfile;
+        myfile.open(file + ".qdimacs");
+        bdd2CNF(myfile, matrix); 
+        myfile.close();
+    } 
+    if(cir){
+        LOG(2, "Writing QCIR file in " << file << "_fromBDD.qcir" << endl);
+        std:: ofstream myfile;
+        myfile.open(file + "_fromBDD.qcir");
+        bdd2Qcir(myfile, matrix); 
+        myfile.close();
+    }
 }
 
 // Here we assume that either the matrix is a leaf, or all variables 

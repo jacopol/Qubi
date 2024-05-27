@@ -32,8 +32,9 @@ bool KEEPNAMES  = false;
 bool GARBAGE    = false;
 bool FLATTEN    = false;
 bool CLEANUP    = false;
+bool TO_CIRCUIT = false;
+bool TO_CNF = false;
 int UNITPROP   = 1;
-
 int ITERATE     = DEFAULT_ITERATE;
 int REORDER     = DEFAULT_REORDER;
 int QUANTBLOCKS = DEFAULT_QUANTBLOCKS;
@@ -78,6 +79,8 @@ void usage() {
          << "\t-w, -workers=<n>: \tBDD: use n threads, n in [0..64], 0=#cores, 4=(*)\n"
          << "\t-v, -verbose=<n>: \tverbose level (0=quiet, 1=normal (*), 2=verbose, 3=debug)\n"
          << "\t-s, -stats: \t\tturn statistics on (leads to slow-down)\n"
+         << "\t-circ: \t\t\toutput QCIR file representing the BDD after preprocessing\n"
+         << "\t-cnf: \t\t\tgenerate QDIMACS file from the BDD\n"
          << "\t-h, -help: \t\tthis usage message\n"
          << "\t(*) = default values"
          << endl;
@@ -136,6 +139,8 @@ bool parseOption(string& arg) {
     if (arg == "-prefix"  || arg == "-x") { PREFIX = checkInt(arg,val,0,2); return true; }
     if (arg == "-iterate" || arg == "-i") { ITERATE = checkInt(arg,val,0,1); return true; }
     if (arg == "-reorder" || arg == "-r") { REORDER = checkInt(arg,val,0,2); return true; }
+    if (arg == "-circ")                   { TO_CIRCUIT = true; return true; }
+    if (arg == "-cnf")                    { TO_CNF = true; return true; }
     if (arg == "-gc"      || arg == "-g") { GARBAGE = true; return true; }
     if (arg == "-verbose" || arg == "-v") { VERBOSE = checkInt(arg,val,0,3); return true; }
     if (arg == "-workers" || arg == "-w") { WORKERS = checkInt(arg,val,0,64); return true; }
@@ -187,7 +192,8 @@ void report_result(const CircuitRW& qbf, bool verdict, const Valuation& valuatio
 
 TASK_2(bool, solve_task, CircuitRW*, qbf, Valuation*, valuation) {   
     Solver solver(*qbf);
-    bool verdict = solver.solve(NAME.substr(0,NAME.find(".qcir")),UNITPROP); // The solver has access to the filename and can thus e.g. write QDIMACS and QCIR files with similar names
+    bool verdict = solver.solve(NAME.substr(0,NAME.find(".qcir")),UNITPROP, TO_CIRCUIT, TO_CNF); 
+    // The solver has access to the filename and can thus e.g. write QDIMACS and QCIR files with similar names
     if (EXAMPLE) *valuation = solver.example();
     return verdict;
 }
