@@ -32,7 +32,7 @@ class Solver {
 
     public:
         Solver(const Circuit& circuit);
-        bool solve(string filename);
+        bool solve(string filename, int prop);
         Valuation example() const; // can only be called after solve()
 };
 

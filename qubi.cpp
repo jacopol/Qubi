@@ -32,6 +32,8 @@ bool KEEPNAMES  = false;
 bool GARBAGE    = false;
 bool FLATTEN    = false;
 bool CLEANUP    = false;
+int UNITPROP   = 1;
+
 int ITERATE     = DEFAULT_ITERATE;
 int REORDER     = DEFAULT_REORDER;
 int QUANTBLOCKS = DEFAULT_QUANTBLOCKS;
@@ -67,6 +69,7 @@ void usage() {
          << "\t-f, -flatten: \t\tflattening transformation on and/or subcircuits\n"
          << "\t-c, -cleanup: \t\tremove unused variable and gate names\n"
          << "\t-q, -quant=<n>: \tquantifier block transformation: 0=keep (*), 1=split, 2=combine\n"
+         << "\t-u, -unitprop=<n>: \tperform unit propagation: 0=no, 1=yes (*)\n"
          << "\t-x, -prefix=<n>: \tmove prefix into circuit: 0=prenex (*), 1=ontop, 2=miniscope\n"
          << "\t-r, -reorder=<n>: \tvariable reordering: 0=none, 1=dfs (*), 2=matrix\n"
          << "\t-i, -iterate=<n>: \tevaluate and/or: 0=left-to-right, 1=pairwise (*)\n"
@@ -137,6 +140,7 @@ bool parseOption(string& arg) {
     if (arg == "-verbose" || arg == "-v") { VERBOSE = checkInt(arg,val,0,3); return true; }
     if (arg == "-workers" || arg == "-w") { WORKERS = checkInt(arg,val,0,64); return true; }
     if (arg == "-table"   || arg == "-t") { TABLE   = checkInt(arg,val,15,42); return true; }
+    if (arg == "-unitprop"|| arg == "-u") { UNITPROP = checkInt(arg,val,0,1); return true; }
     if (arg == "-help"    || arg == "-h") { usage(); exit(1); }
     return false;
 }
@@ -183,7 +187,7 @@ void report_result(const CircuitRW& qbf, bool verdict, const Valuation& valuatio
 
 TASK_2(bool, solve_task, CircuitRW*, qbf, Valuation*, valuation) {   
     Solver solver(*qbf);
-    bool verdict = solver.solve(NAME.substr(0,NAME.find(".qcir"))); // The solver has access to the filename and can thus e.g. write QDIMACS files with similar names
+    bool verdict = solver.solve(NAME.substr(0,NAME.find(".qcir")),UNITPROP); // The solver has access to the filename and can thus e.g. write QDIMACS and QCIR files with similar names
     if (EXAMPLE) *valuation = solver.example();
     return verdict;
 }

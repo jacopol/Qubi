@@ -17,13 +17,13 @@ string file;
 
 Solver::Solver(const Circuit& circuit) : c(circuit), matrix(false) { }
 
-bool Solver::solve(string filename) {
+bool Solver::solve(string filename, int prop) {
     file = filename;
     matrix2bdd();
-    matrix = unitpropagation(matrix);
+    if(prop) matrix = unitpropagation(matrix);
     std:: ofstream myfile;
     myfile.open(file + "_fromBDD.qcir");
-    bdd2Qcir(myfile, matrix); // << print debugging, looks okay as of now
+    bdd2Qcir(myfile, matrix); 
     myfile.close();
 
     prefix2bdd();
@@ -66,7 +66,7 @@ Valuation Solver::example() const {
         // return the result
         for (size_t i=0; i<vars.size(); i++){
             pair<int,bool> res;
-            //remember to consider truth values assigned during unit propagation TODO: clean code
+            //remember to consider truth values assigned during unit propagation
             for(int j=0; j<restricted_vars.size(); j++){
                 if(vars[i]==abs(restricted_vars[j])){
                     res = pair<int,bool>({vars[i], restricted_vars[j] > 0}); break;
@@ -134,12 +134,9 @@ void Solver::matrix2bdd() {
             if (garbage.size()>0) LOG(3,"]");
         }
 
-        // TODO: generalize, double check that an indifferent unit lit. is a gen. unit lit.
-        // TODO: restrict the gen. unit lit. in the other bdds.
-        //Reichl synthesis specifically
-        /*if(i==c.getOutput() && g.output == And){
+        if(i==c.getOutput() && g.output == And){
             args = unitprop_general(args);
-        }*/
+        }
 
 
         Sylvan_Bdd bdd(false);
@@ -155,15 +152,6 @@ void Solver::matrix2bdd() {
             assert(false);
         if (STATISTICS) { LOG(2," (" << bdd.NodeCount() << " nodes)"); }
         LOG(2, endl);
-        /*
-        bool noMoreOrGates = true;
-        for(int j = i; j<=abs(c.getOutput()); j++){
-            if(c.getGate(j).output== Or)
-                noMoreOrGates = false;
-        }
-        if(noMoreOrGates) bdd = unitpropagation(bdd);
-        */
-
         bdds.push_back(bdd);
         
     }
@@ -189,7 +177,6 @@ vector<int> Solver::polarity(){
     }
     return polarity;
 }
-// TODO: Is this useful in non-CNF setting?
 void Solver::pureLitElim(){
     bool pureVar = true;
     while (pureVar){ //repeat until fixpoint
@@ -285,10 +272,7 @@ Sylvan_Bdd Solver::unitpropagation(Sylvan_Bdd bdd) {
     vector<Sylvan_Bdd> unitbdds; 
     for(it = units.begin(); it != units.end(); it++){
         unitbdds.push_back(it->second ? Sylvan_Bdd(it->first) : !Sylvan_Bdd(it->first));
-        if(bdd.restrict(!unitbdds.back())==Sylvan_Bdd(false)){ // u is a generalized unit clause
-                LOG(1, "Generalized unit clause:" << it->first << endl);
-            }
-        restricted_vars.push_back(it->second ? it->first : -(it->first)); LOG(1,"Detected unit var:" << it->first << endl);
+        restricted_vars.push_back(it->second ? it->first : -(it->first)); LOG(2,"Detected unit var:" << it->first << endl);
     }
     for(int i = 0; i < unitbdds.size(); i++){
         bdd = bdd.restrict(unitbdds[i]); 
@@ -388,7 +372,7 @@ void Solver::bdd2Qcir(std::ostream& s, Sylvan_Bdd bdd) const {
             } else if(varmap.count(abs(arg))==1 ){ // Include any non-trivial literals as well as any gates as input
                 int argument = arg >= 0 ? varmap.at(abs(arg)) : -varmap.at(abs(arg));
 
-                args.push_back(argument); // TODO: use new name instead
+                args.push_back(argument);
             } else{                                                    // The input variable does not appear in the BDD
                 for(int j=0; j<restricted_vars.size(); j++){
                     if(abs(arg)==abs(restricted_vars[j])){
