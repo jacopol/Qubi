@@ -15,36 +15,42 @@ using std::endl;
 
 string file;
 
+int propa;
+
 Solver::Solver(const Circuit& circuit) : c(circuit), matrix(false) { }
 
 bool Solver::solve(string filename, int prop, bool to_circuit, bool to_cnf) {
     file = filename;
+    propa = prop;
     matrix2bdd();
-    if(prop) matrix = unitpropagation(matrix);
-    write_output(filename, to_circuit, to_cnf);
-    
-
-    prefix2bdd();
-    return verdict();
-}
-
-void Solver::write_output(string filename, bool cir, bool cnf) const {
-    if(cnf){
-        LOG(2, "Writing QDIMACS file in " << file << ".qdimacs" << endl);
-        std:: ofstream myfile;
-        myfile.open(file + ".qdimacs");
-        bdd2CNF(myfile, matrix); 
-        myfile.close();
-    } 
-    if(cir){
-        LOG(2, "Writing QCIR file in " << file << "_fromBDD.qcir" << endl);
-        std:: ofstream myfile;
-        myfile.open(file + "_fromBDD.qcir");
-        bdd2Qcir(myfile, matrix); 
-        myfile.close();
+    if(propa) matrix = unitpropagation(matrix);
+    if(to_circuit) {
+        write_output(); 
+        LOG(1, "Qubi has finished preprocessing the QCIR file." << endl)
+        return true;}
+    else{
+        prefix2bdd(to_cnf);
+        return verdict();
     }
 }
 
+void Solver::write_output() const {
+    LOG(2, "Writing QCIR file in " << file << "_fromBDD.qcir" << endl);
+    std:: ofstream myfile;
+    myfile.open(file + "_fromBDD.qcir");
+    bdd2Qcir(myfile, matrix); 
+    myfile.close();
+
+}
+
+void Solver::write_qdimacs(Sylvan_Bdd matrix) const {
+    LOG(2, "Writing QDIMACS file in " << file << "_fromBDD.qdimacs" << endl);
+    std:: ofstream myfile;
+    myfile.open(file + "_fromBDD.qdimacs");
+    bdd2CNF(myfile, matrix); 
+    myfile.close();
+
+}
 // Here we assume that either the matrix is a leaf, or all variables 
 // except for the first (outermost) block have been eliminated
 bool Solver::verdict() const {
@@ -149,7 +155,7 @@ void Solver::matrix2bdd() {
             if (garbage.size()>0) LOG(3,"]");
         }
 
-        if(i==c.getOutput() && g.output == And){
+        if(propa && i==c.getOutput() && g.output == And){
             args = unitprop_general(args);
         }
 
@@ -173,45 +179,6 @@ void Solver::matrix2bdd() {
     matrix = toBdd(c.getOutput()); // final result
 }
 
-void updatePolarity(vector<int> polarity, int v, int pol){
-    if(polarity[v] == -2)
-        polarity[v] = pol; 
-    else if(polarity[v] != pol) //only set to -1 if non-pure
-        polarity[v] = -1;
-}
-vector<int> Solver::polarity(){
-    vector<int> polarity;
-    for(int i = 1; i<c.maxVar();i++)
-        polarity.push_back(-2);
-    for(int i =1; i<c.maxVar(); i++){
-        if(matrix.restrict(Sylvan_Bdd(i)) == Sylvan_Bdd(true)) updatePolarity(polarity, i, 1);
-        else if(matrix.restrict(!Sylvan_Bdd(i)) == Sylvan_Bdd(true)) updatePolarity(polarity, i, 0);
-        else if(matrix.restrict(!Sylvan_Bdd(i)) == matrix.UnivAbstract({i})) updatePolarity(polarity, i, 1);
-        else if(matrix.restrict(Sylvan_Bdd(i)) == matrix.UnivAbstract({i})) updatePolarity(polarity, i, 0);
-        else updatePolarity(polarity, i, !polarity[i]);
-    }
-    return polarity;
-}
-void Solver::pureLitElim(){
-    bool pureVar = true;
-    while (pureVar){ //repeat until fixpoint
-        vector<int> pol = polarity();
-        Sylvan_Bdd polBdd = Sylvan_Bdd(true);
-        pureVar = false;
-        for(int v = 0; v< pol.size(); v++){
-            if(pol[v] != -2 && pol[v] != -1){
-                pureVar = true;
-                // Remove universal literals from clauses and remove clauses containing existential literals
-                if((c.quantAt(v)==Forall && pol[v]==0) || (c.quantAt(v)==Exists && pol[v]==1)){
-                    polBdd *= Sylvan_Bdd(v); restricted_vars.push_back(v);
-                } else{
-                    polBdd *= !Sylvan_Bdd(v); restricted_vars.push_back(-v);    
-                } 
-            }
-        }
-        matrix = matrix.restrict(polBdd);
-    }
-}
 
 std::map<int, bool> Solver::detectUnitLits(Sylvan_Bdd bdd) {
 
@@ -317,7 +284,7 @@ vector<Sylvan_Bdd> Solver::unitprop_general(vector<Sylvan_Bdd> bdds){
         for(int k = 0; k < bdds.size(); k++){
             bdds[k] = bdds[k].restrict(u);
         }
-        LOG(1,"Detected unit var:" << u.getRootVar() << endl);
+        LOG(2,"Detected unit var:" << u.getRootVar() << endl);
     }
     return bdds;
 }
@@ -533,7 +500,7 @@ void Solver::bdd2CNF(std::ostream& s, Sylvan_Bdd bdd) const {
 }
 
 
-void Solver::prefix2bdd() {
+void Solver::prefix2bdd(bool to_cnf) {
     LOG(1,"Quantifying Prefix" << endl);
     // Quantify blocks from last to second, unless fully resolved
     for (int i=c.maxBlock()-1; i>0; i--) {
@@ -543,13 +510,9 @@ void Solver::prefix2bdd() {
         }
         Block b = c.getBlock(i);
         LOG(2,"- block " << i+1 << " (" << b.size() << "x " << Qtext[b.quantifier] << "): ");
+        bool first_forall = true;
         if (b.quantifier == Forall){
-            /*std:: ofstream myfile;
-            myfile.open(file + "_inPrefix" + std::to_string(i)  +".qdimacs");
-            bdd2CNF(myfile, matrix); // << print debugging, looks okay as of now
-            myfile.close();
-*/
-
+            if(first_forall && to_cnf) {write_qdimacs(matrix); first_forall = false;}
 
             matrix = matrix.UnivAbstract(b.variables);
         }

@@ -36,6 +36,8 @@ _Output:_  solving:   [TRUE | FALSE] : the solution of the QBF + (counter)exampl
     -w, -workers=<n>:       BDD: use n threads, n in [0..64], 0=#cores, 4=(*)
     -v, -verbose=<n>:       verbose level (0=quiet, 1=normal (*), 2=verbose, 3=debug)
     -s, -stats:             turn statistics on (leads to slow-down)
+    -pp,-pre:               output QCIR file representing the BDD after preprocessing
+    -cnf:                   generate QDIMACS file from the BDD structure (NB: output file is often exponentially larger than input file)
     -h, -help:              this usage message
     (*) = default values
 

@@ -17,7 +17,7 @@ class Solver {
         vector<int> restricted_vars; // Variables set to a constant under a 'restrict' operation
         // The following functions must be called in this order:
         void matrix2bdd();  // transform all gates up to output to BDD 
-        void prefix2bdd();  // quantifier elimination up to first block
+        void prefix2bdd(bool);  // quantifier elimination up to first block
         bool verdict() const;
         void computeCleanup(); // compute when bdds can be cleaned up
 
@@ -30,7 +30,8 @@ class Solver {
         void bdd2Qcir(std::ostream&, Sylvan_Bdd) const;
         void bdd2CNF(std::ostream&, Sylvan_Bdd) const;
 
-        void write_output(string filename, bool cir, bool cnf) const;
+        void write_output() const;
+        void write_qdimacs(Sylvan_Bdd) const;
     public:
         Solver(const Circuit& circuit);
         bool solve(string filename, int prop, bool to_circuit, bool to_cnf);
